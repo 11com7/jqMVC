@@ -3,7 +3,7 @@
     /**
      * This is the main app class that gets created.  It will include files and offer a "load" when they are all ready
      */
-    $.mvc={}
+    $.mvc={};
     $.mvc.app=function(){
         var app= {
             _loadTimer:null,
@@ -69,7 +69,7 @@
                 //execute startup functions for app
              });
              ```
-             *@param {Function} func
+             *@param {Function} fnc
              *@title app.ready(func);
              */
             ready:function(fnc){
@@ -154,7 +154,7 @@
                             if(that._controllersReady)
                                $(document).trigger("jqmvc:loaded");
                          }
-                      }
+                      };
                       file.onerror=function(e){console.log("error ",e);};
                       $("head").append(file);
                       delete file;
@@ -165,7 +165,7 @@
         };
         
         return app;
-    }
+    };
     
     /**
      * private properties for controllers
@@ -193,8 +193,8 @@
        If you want to execute something when a controller is available, you can set an 'init' function on the object, or listen for
        the "_controllername_:ready" event
        
-     * @param {String} Controller name
-     * @param {Object} Controller object
+     * @param {String} name Controller name
+     * @param {Object} obj Controller object
      * @title $.mvc.controller.create
      */
     $.mvc.controller.create = function(name, obj) {
@@ -228,27 +228,30 @@
         }
         return $.mvc.controller[name];
 
-    }
+    };
+
     /**
      * This handles the routing of the action using MVC style url routes (/controller/action/param1/param2/)
      * This is can be called manually, or using the jqUi custom click handler
         ```
         $.mvc.route("/main/list/foo/bar");
         ```
-     * @param {String} Url string
-     * @param {Object} [Event] - used to prevent default for anchor clicks, etc
+     * @param {String} url string
+     * @param {Object} [evt] - used to prevent default for anchor clicks, etc
      * @title $.mvc.controller.route
      */
     $.mvc.route = function(url, evt) {
+        var route, axt;
+
         if (url.indexOf(baseUrl) === 0)
             url = url.substring(baseUrl.length, url.length);
         if (url[0] == "/")
-            url = url.substr(1)
+            url = url.substr(1);
         url = url.split("/");
         
         if(url.length>1){
-            var route = url.splice(0, 1);
-            var axt = url.splice(0, 1);
+            route = url.splice(0, 1);
+            axt = url.splice(0, 1);
         }
         else {
             route=url[0];
@@ -260,13 +263,13 @@
             return true;
         }
         return false;
-    }
+    };
     
     $.mvc.addRoute=function(url,fnc){
         if (url.indexOf(baseUrl) === 0)
             url = url.substring(baseUrl.length, url.length);
         if (url[0] == "/")
-            url = url.substr(1)
+            url = url.substr(1);
         url = url.split("/");
         
         if(url.length>1){
@@ -282,11 +285,13 @@
         }
         $.mvc.controller[route][axt]=fnc;
     
-    }
+    };
     
     /**
      * Internal function that loads a view via AJAX and appends it to the dom
-     * @param {String} Path
+     * @param {String} path Path
+     * @param {String} controller
+     * @param {String} name id attribute of script tag
      * @api private
      * @title $.mvc.controller.addView
      */
@@ -302,7 +307,7 @@
                 controllerReady[controller]&&controllerReady[controller].init.apply(controllerReady[controller]);
             }
         });
-    }
+    };
     
 
     /**
@@ -320,13 +325,13 @@
 //model.js   
 (function($) {
     
-    storageAdapters = {}; //Each model can have it's own connector
+    var storageAdapters = {}; //Each model can have it's own connector
     var baseOpts={}; //Base options/configs for each model to inherit from
     /**
      * This is the base model that all models inherit from.  This is used internally by $.mvc.model.extend
        
      * @param {String} name
-     * @param {Object} properties and methods to add to the model
+     * @param {Object} opts properties and methods to add to the model
      * @api private
      * @title $.mvc.model
      */
@@ -334,8 +339,8 @@
     $.mvc.model =function(name,opts) {
         
         var self = this;
-        opts && opts['modelName'] && delete opts['modelName']
-        opts && opts['id'] && delete opts['id']
+        opts && opts['modelName'] && delete opts['modelName'];
+        opts && opts['id'] && delete opts['id'];
         if(!baseOpts[name]) //First time it's created, we want to store the options
             baseOpts[name]=opts;
         $.extend(this,opts);
@@ -359,7 +364,7 @@
                         el.modelName=self.modelName;
                         el.id=id;
                         if(callback)
-                           return callback(el)
+                           return callback(el);
                         return el;
                     }
                 );
@@ -394,7 +399,7 @@
                if(obj.toLowerCase()!="id"&&obj.toLowerCase()!="modelName")
                   this[obj]=value;
             }
-        }
+        };
 
     
     /**
@@ -404,15 +409,15 @@
         $.mvc.model.extend('model',{foo:'bar'},myCustomAdapter)
         ```
      * @param {String} name
-     * @param {Object} default methods/properties
-     * @param {Object} [storageAdapter] - look below for the default
+     * @param {Object} obj default methods/properties
+     * @param {Object} [storageAdapter] - object implmenting storageAdapter interface (look below for the default)
      */
     $.mvc.model.extend = function(name, obj, storageAdapter) {
         storageAdapters[name] = storageAdapter ? storageAdapter : (localAdapter.linkerCache[name]={},localAdapter);
         return function() {
             return new $.mvc.model(name, obj);
         }
-    }
+    };
     
     
     //Local Storage Adapter
