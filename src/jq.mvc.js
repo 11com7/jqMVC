@@ -482,6 +482,36 @@
       return storageAdapters[this.modelName].getAll.call(storageAdapters[this.modelName], this.modelName, callback, el);
     };
 
+    /**
+     * Set properties on the model. You can pass in a key/value or an object of properties.
+     * @param {Object|String} obj
+     * @param {*} [value] only used if obj ist key string
+     */
+    $.mvc.modelDb.prototype.set = function(obj, value){
+      "use strict";
+
+      var readOnlyVars = ["id", "modelName", "tableName"];
+
+      if (obj && $.isObject(obj))
+      {
+        readOnlyVars.map( function(el) { if (obj[el]) { delete obj[el]; } } );
+        for (var t in obj)
+        {
+          if (this.hasOwnProperty(t))
+          {
+            this[t] = obj[t];
+          }
+        }
+      }
+      else if (obj && this.hasOwnProperty(obj))
+      {
+        if (!readOnlyVars.some( function(el) { return ( obj.toLowerCase() === el.toLowerCase() ); } ))
+        {
+          this[obj] = value;
+        }
+      }
+    };
+
    /**
     * <p>This is called to create a new extended model type for database storage adapters.
     * You pass in the name, default properties and an optional storage adapter.</p>
