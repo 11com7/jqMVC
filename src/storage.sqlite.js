@@ -111,7 +111,27 @@ var SqliteStorageAdapter = (function()
   // get
   // ===================================================================================================================
   /**
-   * Load a single object from the database and pass it (or null if not found) to callback(obj).
+   * <p>Load a single object from the database and pass it (or null if not found) to callback(obj).</p>
+   * <p>If the id isn't found, get() passes null to callback.</p>
+   * <p><b>__wakeup() method</b><br/>
+   * get() supports a magic __wakeup() method in model. If this function could be found, it will called before passing
+   * the object to the callback function. <code>this</code> refers to the loaded object!
+   * <pre><code>
+   *  var Model = new $.mvc.model.extend("model",
+   *  {
+   *    // ...
+   *
+   *    // this method will be called before the loaded object will be passed to callback()
+   *    __wakeup : function()
+   *    {
+   *      // do something with "this"
+   *
+   *      return this;
+   *    }
+   *
+   *    // ...
+   *  }</code></pre>
+   * </p>
    *
    * @param {Number} id
    * @param {function} callback
@@ -150,6 +170,11 @@ var SqliteStorageAdapter = (function()
             {
               el = $.extend({}, obj);
               el.set(results.rows.item(0));
+
+              if (el.__wakeup && $.isFunction(el.__wakeup))
+              {
+                el = el.__wakeup.call(el);
+              }
             }
 
             return callback(el);
