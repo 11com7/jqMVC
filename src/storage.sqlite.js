@@ -1,5 +1,5 @@
 /**
- * SqliteStorageAdapter - manages modell data in a sqlite database.
+ * SqliteStorageAdapter - manages model data in a SQLite database.
  * @author dom <d.pesch@11com7.de>
  * @since 2012-09-30
  */
@@ -24,10 +24,10 @@ var SqliteStorageAdapter = (function()
      * from obj.
      * </p>
      *
-     * <h2> __sleep() method</h2>
-     * <p>Support a __sleep() method in modell object, which will be called to get the
-     * <code>
-     *  var Modell = new $.mvc.model.extend("modell",
+     * <b> __sleep() method</b>
+     * <p>Support a __sleep() method in model object, which will be called before passing the object to callback.
+     * <pre><code>
+     *  var Model = new $.mvc.model.extend("model",
      *  {
      *    // ...
      *
@@ -40,8 +40,7 @@ var SqliteStorageAdapter = (function()
      *
      *      return objCopy;
      *    }
-     *  }
-     * </code>
+     *  }</code></pre>
      * </p>
      *
      * @param {jq.mvc.modelDb} obj
@@ -105,17 +104,15 @@ var SqliteStorageAdapter = (function()
     },
 
 
-
-
   // ===================================================================================================================
   // get
   // ===================================================================================================================
   /**
    * <p>Load a single object from the database and pass it (or null if not found) to callback(obj).</p>
    * <p>If the id isn't found, get() passes null to callback.</p>
-   * <p><b>__wakeup() method</b><br/>
-   * get() supports a magic __wakeup() method in model. If this function could be found, it will called before passing
-   * the object to the callback function. <code>this</code> refers to the loaded object!
+   * <p><b>__wakeup() method</b>
+   * get() supports a magic __wakeup() method in model. If this function could be found, it will called before passing the object to the callback function.
+   * <code>this</code> refers to the loaded object!
    * <pre><code>
    *  var Model = new $.mvc.model.extend("model",
    *  {
@@ -134,7 +131,7 @@ var SqliteStorageAdapter = (function()
    * </p>
    *
    * @param {Number} id
-   * @param {function} callback
+   * @param {function|undefined} [callback]
    * @param {jq.mvc.modelDb} obj
    * @requires $.db
    * @throws Error
@@ -177,7 +174,7 @@ var SqliteStorageAdapter = (function()
               }
             }
 
-            return callback(el);
+            return (callback && $.isFunction(callback)) ? callback(el) : el;
           });
         },
         // ERROR
