@@ -79,7 +79,7 @@
                     fnc();
             },
             /**
-             * Load controllers for the app asynchronously.  Do not put the ".js" suffex on the controller names.
+             * Load controllers for the app asynchronously.  Do not put the ".js" suffix on the controller names.
              * When the "_controllername_:ready" events are all fired, app.ready is available
              ```
              app.loadControllers("main")
@@ -123,7 +123,7 @@
             },
 
             /**
-             * Load models for the app asynchronously.  Do not put the ".js" suffex on the controller names.
+             * Load models for the app asynchronously.  Do not put the ".js" suffix on the controller names.
              *
              ```
              app.loadModels("main")
@@ -467,7 +467,7 @@
 
     //Local Storage Adapter
     /**
-     * This is the default storage adapater that wraps the HTML5 local storage item.
+     * This is the default storage adapter that wraps the HTML5 local storage item.
      * When implementing a new adapter, you must implement the four following functions.  It should be noted that getAll should return an array
      *
      * Each function has a callback function to be executed against.
