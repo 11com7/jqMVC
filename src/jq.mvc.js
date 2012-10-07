@@ -428,39 +428,39 @@
     $.mvc.modelDb.prototype = new $.mvc.model;
     $.mvc.modelDb.prototype.constructor = $.mvc.modelDb;
 
-    $.mvc.modelDb.prototype = {
-        /**
-         * Loads entry with id and returns model object OR null (= not found!).
-         * @param {Number} id
-         * @param {function} [callback]
-         * @return {Object} loaded object
-         */
-        get : function(id, callback)
-        {
-            var self=this, el = new $.mvc.model(this.modelName,baseOpts[this.modelName]);
-            storageAdapters[this.modelName].get.call(storageAdapters[this.modelName], id, function(obj) {
-                if (obj)
-                {
-                    el = $.extend(el, obj);
-                    el.modelName = self.modelName;
-                    el.id = id;
-                }
-                else
-                {
-                    el = null;
-                }
+    /**
+     * Loads entry with id and returns model object OR null (= not found!).
+     * @param {Number} id
+     * @param {function} [callback]
+     * @return {Object} loaded object
+     */
+    $.mvc.modelDb.prototype.get = function(id, callback)
+    {
+        var self=this, el = new $.mvc.model(this.modelName,baseOpts[this.modelName]);
+        storageAdapters[this.modelName].get.call(storageAdapters[this.modelName], id, function(obj) {
+            if (obj)
+            {
+                el = $.extend(el, obj);
+                el.modelName = self.modelName;
+                el.id = id;
+            }
+            else
+            {
+                el = null;
+            }
 
-                return (callback && $.isFunction(callback)) ? callback(el) : el;
-            }, el);
-        }
-
+            return (callback && $.isFunction(callback)) ? callback(el) : el;
+        }, el);
     };
+
 
 
     $.mvc.modelDb.extend = function(name, obj, storageAdapter) {
         storageAdapters[name] = storageAdapter ? storageAdapter : (localAdapter.linkerCache[name]=SqliteStorageAdapter);
-        return function() {
-            return new $.mvc.modelDb(name, obj);
+        return function(values) {
+            var el = new $.mvc.modelDb(name, obj);
+            if (values && $.isObject(values)) { el.set(values); }
+            return el;
         }
     };
 
