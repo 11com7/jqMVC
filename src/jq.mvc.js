@@ -423,6 +423,10 @@
     $.mvc.modelDb = function(name, opts)
     {
       this.id = 0;
+      this.tableName = undefined;
+      this.__wakeup = undefined;
+      this.__sleep = undefined;
+
       $.mvc.model.apply(this, arguments);
     };
 
