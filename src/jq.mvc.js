@@ -422,8 +422,10 @@
 
     $.mvc.modelDb = function(name, opts)
     {
-        $.mvc.model.apply(this, arguments);
+      this.id = 0;
+      $.mvc.model.apply(this, arguments);
     };
+
     //noinspection JSCheckFunctionSignatures
     $.mvc.modelDb.prototype = new $.mvc.model;
     $.mvc.modelDb.prototype.constructor = $.mvc.modelDb;
