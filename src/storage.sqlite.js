@@ -44,7 +44,7 @@ var SqliteStorageAdapter = (function()
      * </code>
      * </p>
      *
-     * @param {Object} obj
+     * @param {jq.mvc.modelDb} obj
      * @param {function} [callback]
      * @requires $.db
      * @throws Error  
@@ -110,11 +110,17 @@ var SqliteStorageAdapter = (function()
   // ===================================================================================================================
   // get
   // ===================================================================================================================
-  get : function(id, callback)
+  /**
+   * Load a single object from the database and pass it (or null if not found) to callback(obj).
+   *
+   * @param {Number} id
+   * @param {function} callback
+   * @param {jq.mvc.modelDb} obj
+   * @requires $.db
+   * @throws Error
+   */
+  get : function(id, callback, obj)
   {
-    console.log("get", arguments);
-    return;
-
     var
       db,
       tableName = _getTableName(obj),
@@ -128,13 +134,32 @@ var SqliteStorageAdapter = (function()
       db = $.db.open();
 
       _checkTableName(tableName);
-      columns = _getWriteColumns(tableName);
+      columns = $.db.getColumns(tableName);
 
       sql = "SELECT " + columns.join(", ") + " FROM " + tableName +
-        "WHERE id=?";
+        " WHERE id=?";
 
-      console.log(sql);
 
+        db.transaction(function(tx)
+        {
+          tx.executeSql(sql, [id], function(tx, results)
+          {
+            var el = null;
+
+            if (results.rows.length > 0)
+            {
+              el = $.extend({}, obj);
+              el.set(results.rows.item(0));
+            }
+
+            return callback(el);
+          });
+        },
+        // ERROR
+        function(err)
+        {
+            $.db.throwSqlError(err, sql);
+        });
     }
     catch(err)
     {
