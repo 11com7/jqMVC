@@ -246,6 +246,56 @@ var SqliteStorageAdapter = (function()
       {
         $.db.throwSqlError(err, sql || "-- unknown --");
       }
+    },
+
+
+    // ===================================================================================================================
+    // remove
+    // ===================================================================================================================
+    /**
+     * <p>Removes object from database.</p>
+     * <p>The callback function will only been called, if the element was "really" deleted in the database.</p>
+     * <p>Non existing elements won't call the callback nor trigger the remove event!</p>
+     *
+     * @param {jq.mvc.modelDb} obj empty model object
+     * @param {function} [callback]
+     * @event modelName:remove will only be fired if object was really deleted in the database
+     */
+    remove:function(obj, callback){
+      var
+        db,
+        tableName = _getTableName(obj),
+        sql = ""
+        ;
+
+      try
+      {
+        db = $.db.open();
+        _checkTableName(tableName);
+
+        sql = "DELETE FROM " + tableName + " WHERE id = ?";
+
+        db.transaction(function(tx)
+        {
+          tx.executeSql(sql, [obj.id], function(tx, results)
+          {
+            if (results.rowsAffected)
+            {
+              $(document).trigger(obj.modelName + ":remove", obj.id);
+              if (callback && $.isFunction(callback)) { callback(obj) }
+            }
+          });
+        },
+        // ERROR
+        function(err)
+        {
+          $.db.throwSqlError(err, sql);
+        });
+      }
+      catch (err)
+      {
+        $.db.throwSqlError(err, sql || "-- unknown --");
+      }
     }
 
 

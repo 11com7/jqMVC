@@ -432,7 +432,7 @@
       }
 
     },
-    // ERRORs
+    // ERRORS
     function(err)
     {
       $.db.throwSqlError(err, sql);
