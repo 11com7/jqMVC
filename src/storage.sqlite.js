@@ -167,8 +167,7 @@ var SqliteStorageAdapter = (function()
 
               if (results.rows.length > 0)
               {
-                el = $.extend({}, obj);
-                el.set(results.rows.item(0));
+                el = $.extend({}, obj, results.rows.item(0));
 
                 if (el.__wakeup && $.isFunction(el.__wakeup))
                 {
@@ -228,8 +227,7 @@ var SqliteStorageAdapter = (function()
           {
             for (var t = 0; t < results.rows.length; t++)
             {
-              var el = $.extend({}, obj);
-              el.set(results.rows.item(t));
+              var el = $.extend({}, obj, results.rows.item(t));
               all.push(hasWakeUp ? el.__wakeup.call(el) : el);
             }
 
@@ -378,7 +376,6 @@ var SqliteStorageAdapter = (function()
       return ret;
     }
   }
-
 
   return SqliteStorageAdapter;
 })();
