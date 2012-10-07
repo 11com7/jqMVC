@@ -442,7 +442,7 @@
      */
     $.mvc.modelDb.prototype.get = function(id, callback)
     {
-        var self=this, el = new $.mvc.model(this.modelName,baseOpts[this.modelName]);
+        var self=this, el = new $.mvc.modelDb(this.modelName,baseOpts[this.modelName]);
         storageAdapters[this.modelName].get.call(storageAdapters[this.modelName], id, function(obj) {
             if (obj)
             {
@@ -459,7 +459,19 @@
         }, el);
     };
 
+    /**
+     * Loads all entries in an array with jq.mvc.modelDb objects.
+     * An empty table results in an empty array.
+     *
+     * @param {function} [callback]
+     * @return {Array}
+     */
+    $.mvc.modelDb.prototype.getAll = function(callback){
+      "use strict";
 
+      var el = new $.mvc.modelDb(this.modelName, baseOpts[this.modelName]);
+      return storageAdapters[this.modelName].getAll.call(storageAdapters[this.modelName], this.modelName, callback, el);
+    };
 
     $.mvc.modelDb.extend = function(name, obj, storageAdapter) {
         storageAdapters[name] = storageAdapter ? storageAdapter : (localAdapter.linkerCache[name]=SqliteStorageAdapter);
