@@ -420,6 +420,15 @@
     };
 
 
+  /**
+   * Internal extended model base class.
+   * @param {String} name of new model
+   * @param {Object} opts default methods/properties
+   * @property {Number} id for object in the database (0 = new element)
+   * @property {String|undefined} tableName can be set, to use an alternative table name instead of modelName
+   * @property {function|undefined} __wakeup (optional) can be set, as "magic" callback used by StorageAdapter.get(), StorageAdapter.getAll() to manipulate data after loading
+   * @property {function|undefined} __sleep (optional) can be set, as "magic" callback used by StorageAdapter.save() to manipulate data before saving
+   */
     $.mvc.modelDb = function(name, opts)
     {
       this.id = 0;
@@ -473,6 +482,17 @@
       return storageAdapters[this.modelName].getAll.call(storageAdapters[this.modelName], this.modelName, callback, el);
     };
 
+   /**
+    * <p>This is called to create a new extended model type for database storage adapters.
+    * You pass in the name, default properties and an optional storage adapter.</p>
+    * <pre><code>
+    * $.mvc.model.extend('model',{foo:'bar'})
+    * $.mvc.model.extend('model',{foo:'bar'},myCustomAdapter)
+    * </code></pre>
+    * @param {String} name
+    * @param {Object} obj default methods/properties
+    * @param {Object} [storageAdapter] - object implementing storageAdapter interface (look below for the default)
+   */
     $.mvc.modelDb.extend = function(name, obj, storageAdapter) {
         storageAdapters[name] = storageAdapter ? storageAdapter : (localAdapter.linkerCache[name]=SqliteStorageAdapter);
         return function(values) {
