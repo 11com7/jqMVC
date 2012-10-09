@@ -4,3 +4,21 @@ jqMVC
 lightweight MVC framework built on top of jqMobi
 
 Please see  http://www.jqmobi.com/docmvc.php for documentation
+
+
+SQLite fork
+-----------
+This is a fork which extends the model for SQLite database support using the (stopped) [W3C Web SQL Database interface]
+(http://www.w3.org/TR/webdatabase/):
+* extends jq.mvc.model
+* get(), getAll(), remove(), set()
+* »magic« methods __sleep(), wakeup() to convert data before saving / after loading
+
+
+This fork uses our – not ready – sqlite lib:
+* very easy single db approach
+* easy database definition (addTable(
+* auto init (creates tables, ...)
+* auto date time columns for new entries (dt_create) and updated rows (dt_change) using a trigger
+* supports auto collate settings for text types
+* offers trigger for :open, :close database

@@ -2,7 +2,10 @@
 /**
  * db - Database-Connector/Helper for SQLite
  *
- * Copyright 2012 11com7, Bonn, Germany
+ * Copyright (c) 2012 11com7, Bonn, Germany
+ * Released under the MIT license
+ * http://opensource.org/licenses/mit-license.php
+ *
  * @author Dominik Pesch <d.pesch@11com7.de>
  * @since 2012-09-30
  */
