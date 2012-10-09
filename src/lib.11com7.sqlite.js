@@ -55,9 +55,6 @@
     ;
 
 
-  /**
-   * @namespace 11com7
-   */
   $.db = {};
 
   // ===================================================================================================================
@@ -474,7 +471,7 @@
    */
   function _getSqlTableConstraints(tableName)
   {
-    return (tables[tableName]['constraints'] && tables[tableName]['constraints'].length > 0) ? tables[tableName]['constraints'].join(", ") : '';
+    return (tables[tableName]['constraints'] && tables[tableName]['constraints'].length > 0) ? ", " + tables[tableName]['constraints'].join(", ") : '';
   }
 
 
@@ -493,14 +490,14 @@
 
     // check for auto_create_timestamp
     //noinspection JSValidateTypes
-    if (!!options.timestamp_create && columns.indexOf(options.timestamp_create))
+    if (!!options.timestamp_create && columns.indexOf(options.timestamp_create) !== -1)
     {
       $.db.setColumns(tableName, options.timestamp_create, [cType, SQL_DT_CONSTRAINTS]);
     }
 
     // check for auto_change_timestamp
     //noinspection JSValidateTypes
-    if (!!options.timestamp_change && columns.indexOf(options.timestamp_change))
+    if (!!options.timestamp_change && columns.indexOf(options.timestamp_change) !== -1)
     {
       $.db.setColumns(tableName, options.timestamp_change, [cType, SQL_DT_CONSTRAINTS]);
       $.db.addTrigger(tableName+'_dt_create_autoupdate', $.template(SQL_DT_CHANGE_TRIGGER, {table: tableName}));
