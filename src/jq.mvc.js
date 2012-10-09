@@ -240,7 +240,8 @@
      * @title $.mvc.controller.route
      */
     $.mvc.route = function(url, evt) {
-        if (url.indexOf(baseUrl) === 0)
+      url=String(url);
+      if (url.indexOf(baseUrl) === 0)
             url = url.substring(baseUrl.length, url.length);
         if (url[0] == "/")
             url = url.substr(1)
