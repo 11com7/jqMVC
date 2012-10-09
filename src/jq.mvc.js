@@ -365,7 +365,7 @@
                     el.modelName=self.modelName;
                     el.id=id;
                     if(callback)
-                        return callback(el);
+                       return callback(el);
                     return el;
                 }
             );
@@ -387,18 +387,18 @@
         },
         //Set properties on the model.  You can pass in a key/value or an object of properties
         set:function(obj,value){
-            if($.isObject(obj)){
+           if($.isObject(obj)){
                 obj && obj['modelName'] && delete obj['modelName'];
                 obj && obj['id'] && delete obj['id'];
                 for(var j in obj)
                 {
                     if(this.hasOwnProperty(j))
-                        this[j]=obj[j];
+                       this[j]=obj[j];
                 }
                 return;
-            }
-            if(obj.toLowerCase()!="id"&&obj.toLowerCase()!="modelName")
-                this[obj]=value;
+           }
+           if(obj.toLowerCase()!="id"&&obj.toLowerCase()!="modelname")
+              this[obj]=value;
         }
     };
 
