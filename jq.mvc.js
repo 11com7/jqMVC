@@ -4,6 +4,8 @@
      * This is the main app class that gets created.  It will include files and offer a "load" when they are all ready
      */
     $.mvc={};
+
+
     $.mvc.app=function(){
         var app= {
             _loadTimer:null,
@@ -12,7 +14,6 @@
             _loadedListeners:[],
             _modelsLoaded:0,
             _totalModels:0,
-            _templateType:"text/html",
             _controllersDir:"controllers/",
             _modelsDir:"models/",
             /**
@@ -60,7 +61,8 @@
              */
              
             setViewType:function(type){
-                this._templateType=type;
+                //this._templateType=type;
+                $.mvc._app._templateType=type;
             },
             /**
              * Function to execute when $.mvc.app is ready (controllers and models are loaded async)
@@ -163,9 +165,15 @@
             }
        
         };
-        
         return app;
     };
+
+    /**
+     * Internal object for global app settings
+     */
+    $.mvc._app={
+        _templateType:"text/html"
+    }
     
     /**
      * private properties for controllers
@@ -298,7 +306,7 @@
     $.mvc.controller.addView = function(path,controller,name) {
         $.get(path, function(data) {
             var id=name;
-            $(document.body).append($("<script type='"+$.mvc.app._templateType+"' id='" + id+ "'>" + data + "</script>"));
+            $(document.body).append($("<script type='"+$.mvc._app._templateType+"' id='" + id+ "'>" + data + "</script>"));
             viewsLoaded[controller]++;
             if((viewsLoaded[controller]==viewsTotal[controller]))
             {
@@ -415,6 +423,8 @@
     $.mvc.model.extend = function(name, obj, storageAdapter) {
         storageAdapters[name] = storageAdapter ? storageAdapter : (localAdapter.linkerCache[name]={},localAdapter);
         return function() {
+            if(storageAdapter!==undefined)
+                $.extend(obj,storageAdapter);
             return new $.mvc.model(name, obj);
         }
     };
