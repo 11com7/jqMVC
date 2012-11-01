@@ -81,7 +81,7 @@
   $.db.throwSqlError = function(errorObject, sql)
   {
     sql = sql || "-- unknown --";
-    throw new Error("SQL ERROR #" + errorObject.code + ": " + errorObject.message + " in '" + sql + "'")
+    throw new Error("SQL ERROR #" + errorObject.code + ": " + errorObject.message + " in '" + sql + "'");
   };
 
 
@@ -116,7 +116,7 @@
     }
 
 
-    if (tOptions.name)  options.name = tOptions.name;
+    if (tOptions.name)  { options.name = tOptions.name; }
   };
 
   /**
@@ -180,7 +180,7 @@
 
 
   /**
-   * Adds (or overwrites) a table represention.
+   * Adds (or overwrites) a table representation.
    * @param {String} tableName
    * @param {Array} columns with [ ['fieldName', 'type', 'column-constraints'] ]
    * @param {Array} [tableConstraints]
@@ -251,12 +251,12 @@
       // replace column
       if ((pos = _getColumnIndex(tableName, columns[t][0])) !== -1)
       {
-        tables[tableName]['columns'][pos] = columns[t];
+        tables[tableName].columns[pos] = columns[t];
       }
       // add column
       else
       {
-        tables[tableName]['columns'].push(columns[t]);
+        tables[tableName].columns.push(columns[t]);
       }
     }
   };
@@ -274,12 +274,12 @@
 
     tableConstraints = tableConstraints || [];
 
-    tables[tableName]['constraints'] = tableConstraints;
+    tables[tableName].constraints = tableConstraints;
   };
 
 
   /**
-   * Returns an array of all table names or the defintions (object) for one table, if tableName is an existing table; otherwise undefined.
+   * Returns an array of all table names or the definitions (object) for one table, if tableName is an existing table; otherwise undefined.
    * @param {String} [tableName]
    * @return {Array|Object|undefined}
    */
@@ -305,7 +305,7 @@
   };
 
   /**
-   * Returns an array of all column names for an existing table OR the column defintions (Object) OR undefined for missing tables/columns.
+   * Returns an array of all column names for an existing table OR the column definitions (Object) OR undefined for missing tables/columns.
    * @param {String} tableName
    * @param {String} [column]
    * @return {Array|Object|undefined}
@@ -322,7 +322,7 @@
     else
     {
       var index = _getColumnIndex(tableName, column);
-      return (index > -1) ? _getColumnData(tableName, index) : undefined
+      return (index > -1) ? _getColumnData(tableName, index) : undefined;
     }
   };
 
@@ -391,7 +391,7 @@
   {
     if (!$.db.isOpen()) { throw new Error("database not opened"); }
 
-    var sql = "", t, trigger,
+    var sql = "",
       tables = $.db.getTables();
 
 
@@ -399,7 +399,7 @@
     // init SQL transaction
     {
       // Tables
-      for (t = 0; t < tables.length; t++)
+      for (var t = 0; t < tables.length; t++)
       {
         if (!!options.dropOnInit)
         {
@@ -414,7 +414,7 @@
       }
 
       // Triggers
-      for (trigger in triggers)
+      for (var trigger in triggers)
       {
         if (triggers.hasOwnProperty(trigger))
         {
@@ -471,7 +471,7 @@
    */
   function _getSqlTableConstraints(tableName)
   {
-    return (tables[tableName]['constraints'] && tables[tableName]['constraints'].length > 0) ? ", " + tables[tableName]['constraints'].join(", ") : '';
+    return (tables[tableName].constraints && tables[tableName].constraints.length > 0) ? ", " + tables[tableName].constraints.join(", ") : '';
   }
 
 
@@ -480,7 +480,7 @@
   // ===================================================================================================================
   //noinspection FunctionWithMoreThanThreeNegationsJS
   /**
-   * Checks table defitions for automagic columns (like dt_create, dt_change) and defines column definitions and trigger.
+   * Checks table definitions for automagic columns (like dt_create, dt_change) and defines column definitions and trigger.
    * @param {String} tableName !must exists!
    * @private
    */
@@ -560,7 +560,7 @@
   function _getColumnNames(tableName)
   {
     var columns = [];
-    for (var t=0; t < tables[tableName]['columns'].length; t++)
+    for (var t=0; t < tables[tableName].columns.length; t++)
     {
       columns.push(_getColumnData(tableName, t, 0));
     }
@@ -575,7 +575,7 @@
    * @param {String|Number} column
    * @param {String|Number} [part] name|type|constraints or 0|1|2
    * @return {Array|String|undefined} (Array) complete column definition (= Array(3));
-   *                                  (String) part of column definitin;
+   *                                  (String) part of column definition;
    *                                  (undefined) unknown/not existing column or part
    * @private
    */
@@ -594,12 +594,12 @@
       part = parts.indexOf(part);
     }
 
-    if (column < 0 || column >= tables[tableName]['columns'].length || part >= parts.length)
+    if (column < 0 || column >= tables[tableName].columns.length || part >= parts.length)
     {
       return undefined;
     }
 
-    return (part >= 0) ? tables[tableName]['columns'][column][part] : tables[tableName]['columns'][column];
+    return (part >= 0) ? tables[tableName].columns[column][part] : tables[tableName].columns[column];
   }
 
 
@@ -625,11 +625,11 @@
    */
   function _checkOptions()
   {
-    if (!options.name || options.name == '')
+    if (!options.name || options.name === '')
     {
       throw new Error("DBError: no database name. set with $.db.setOptions(...)");
     }
-    if (!options.displayName || options.displayName == '')
+    if (!options.displayName || options.displayName === '')
     {
       throw new Error("DBError: no database displayName. set with $.db.setOptions(...)");
     }
