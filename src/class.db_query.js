@@ -65,6 +65,7 @@
 
     this._table = tableName;
     this._db = (options && options.db) ? options.db : $.db;
+    this._callbackFilterElement = undefined;
   };
 
 
@@ -232,7 +233,86 @@
         throw new Error("unknown logicOperator '" + logicOperator + " (" + (typeof logicOperator) + "). accepts only: " + this.SQL_OPERATORS_LOGIC.join(', '));
       }
 
+      var
+        sql = "",
+        openBracket = true   // if true, the logicOperator will be supressed
+        ;
 
+      // search[t] has to be:
+      // - string clause: ['column', 'operator', 'value' | {SqlCLause}, ['logicOperator']]
+      // - brackets:      ['(' | ')', ['logicOperator']] | '(' | ')'
+      // - SqlClause:     [{SqlClause}, ['logicOperator']] | {SqlClause}
+      for (var t=0; t < search.length; t++)
+      {
+        var
+          entry = search[t],
+          entryType = typeof entry;
+
+
+        if (!entry) { throw new Error("missing search[" + t + "] (" + (typeof entry) + ")"); }
+
+
+        if (!$.isArray(entry))
+        {
+          if (entry === "(" || entry === ")" || entry instanceof $.SqlClause)
+          {
+            entry = [entry];
+          }
+          else
+          {
+            throw new Error("search[" + t + "] (" + (typeof entry) + ") isn't an array");
+          }
+        }
+        else
+        {
+          if (!entry[0])
+          {
+            throw new Error("search[" + t + "][0] fieldname (or bracket or SqlClause) doesn't exists");
+          }
+        }
+
+
+        // handle brackets
+        if (entry[0] === "(" || entry[0] === ")")
+        {
+          if (entry[0] === "(" && !openBracket)
+          {
+            sql += " " + this._getLogicOperator(entry[1], logicOperator);
+          }
+          else if (entry[0] === ")")
+          {
+            openBracket = false;
+          }
+
+          sql += entry[0];
+          continue;
+        }
+
+        if (entryType === "string")
+        {
+          entry[0] = this._prepareColumnName(entry[0]);
+        }
+
+        // call filter callback
+        if (this._callbackFilterElement && $.isFunction(this._callbackFilterElement))
+        {
+          entry = this._callbackFilterElement.call(this, entry);
+          if (entry === false)  { continue; }
+        }
+
+
+        // handle string clauses
+        if (entryType === "string")
+        {
+          entry[1] = _prepareSearchOperator(entry[1]);
+        }
+
+
+
+
+
+
+      }
 
 
     },
@@ -308,7 +388,109 @@
       }
 
       return (sqlOrderBy.length) ? "ORDER BY " + sqlOrderBy.join(", ") : "";
+    },
+
+
+    _getLogicOperator : function(op1, op2)
+    {
+      return (op1 && this.SQL_OPERATORS_LOGIC[op1.toUpperCase()]) ? op1.toUpperCase() : op2;
+    },
+
+    _prepareColumnName : function(columnName)
+    {
+      if (!columnName || typeof columnName !== "string")
+      {
+        throw new Error("invalid or empty column name: '" + columnName + "' (" + (typeof columnName) + "). has to be non empty string!");
+      }
+
+      return columnName.trim().toLowerCase();
+    },
+
+    /**
+     * (internal) helper for _buildSqlFromFilterArray() to prepare the operator.
+     * @param {Array} entry the actual search row entry
+     * @param {Number} opIndex index number of the operator in entry
+     * @param {Number} searchIndex the actual search row (used for exception infos)
+     * @private
+     */
+    _prepareSearchOperator : function(entry, opIndex, searchIndex)
+    {
+      if (!entry[opIndex] || entry[opIndex] == undefined)
+      {
+        throw new Error("missing or empty operator in search[" + searchIndex + "][" + opIndex + "]");
+      }
+
+      if (typeof entry[opIndex] !== "string")
+      {
+        throw new Error("wrong operator type (" + (typeof entry[opIndex]) + ") in search[" + searchIndex + "][" + opIndex + "]");
+      }
+
+      entry[opIndex] = entry[opIndex].trim().toUpperCase();
+
+      if (!this.SQL_OPERATORS.hasOwnProperty(entry[opIndex]) &&
+          !this.SQL_OPERATORS_ARRAY.hasOwnProperty(entry[opIndex])
+         )
+      {
+        throw new Error("unknown operator '" + entry[opIndex] + "' in search[" + searchIndex + "][" + opIndex + "]");
+      }
+    },
+
+
+    /**
+     * (internal) helper for _buildSqlFromFilterArray() to prepare the operator.
+     * @param {Array} entry the actual search row entry
+     * @param {Number} valueIndex the index number for the value field in entry
+     * @param {Number} opIndex index number of the operator in entry
+     * @param {Number} searchIndex the actual search row (used for exception infos)
+     * @private
+     */
+    _prepareSearchValue : function(entry, valueIndex, opIndex, searchIndex)
+    {
+      if (!entry.hasOwnProperty(valueIndex) || entry[valueIndex] == undefined)
+      {
+        throw new Error("missing or empty value in search[" + searchIndex + "][" + valueIndex + "]");
+      }
+
+      var value = entry[valueIndex];
+
+
+      // special treatment for array operator with string values (which should be converted to arrays)
+      if ()
+
+
+      if (isString(value) === "string")
+      {
+
+      }
+      else if (isNumeric(value) === "number")
+      {
+        // allowed value => nothing to do
+      }
+      else if (typeof value === "boolean")
+      {
+        value = parseInt(value, 10);
+      }
+      else if (value === null)
+      {
+        value = "NULL";
+      }
+      else if ($.isArray(value))
+      {
+
+      }
+      else if (value instanceof $.SqlClause)
+      {
+        value = value.get();
+      }
+      else
+      {
+        throw new Error("unsupported value in search[" + searchIndex + "][" + valueIndex + "]: '" + value + "' (" + valueType + ")");
+      }
+
     }
+
+
+
 
 
 
@@ -349,5 +531,7 @@
 
     return obj;
   }
+
+
 
 })(jq, window);
