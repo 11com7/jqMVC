@@ -14,11 +14,16 @@
   /**
    * SqlClause - wraps "complex" sql clause strings in an object.
    * @param {String} sqlClause
+   * @param {Array} [sqlValues] sql values for '?' parameter in the sqlClause
    * @constructor
    */
-  $.SqlClause = function(sqlClause)
+  $.SqlClause = function(sqlClause, sqlValues)
   {
+    this._sqlClause = "";
+    this._sqlValues = [];
+
     this.set(sqlClause || "");
+    this.values(sqlValues || []);
   };
 
   $.SqlClause.prototype =
@@ -46,7 +51,30 @@
     /**
      * @inheritDoc
      */
-    get : $.SqlClause.prototype.toString
+    get : $.SqlClause.prototype.toString,
+
+    /**
+     * @return {Boolean} TRUE if this SqlClause object has one or more sql values.
+     */
+    hasValues : function()
+    {
+      return (this._sqlValues.length > 0);
+    },
+
+    /**
+     * accessor for internal values: no parameter = get values; with array as parameter = set values.
+     * @param {Array} [newValues] set values if parameter is an array
+     * @return {Array}
+     */
+    values : function(newValues)
+    {
+      if ($.isArray(newValues))
+      {
+        this._sqlValues = newValues;
+      }
+
+      return this._sqlValues;
+    }
   };
 
 
@@ -63,9 +91,39 @@
       throw new Error("parameter tableName is missing or empty");
     }
 
+    /**
+     * @type {String}
+     * @private
+     */
     this._table = tableName;
+
+    /**
+     * @type {$.db}
+     * @private
+     */
     this._db = (options && options.db) ? options.db : $.db;
+
+    /**
+     * callback function which will be called for every search filter element.
+     * It has to return the complete filter entry[x].
+     * @type {function|undefined}
+     * @private
+     */
     this._callbackFilterElement = undefined;
+
+    /**
+     * the last sql query, will be created by _buildSqlFromFilterArray().
+     * @type {String}
+     * @private
+     */
+    this._sql = '';
+
+    /**
+     * Array with a value for every ? which will be set in the sql query.
+     * @type {Array}
+     * @private
+     */
+    this._sqlValues = [];
   };
 
 
@@ -210,12 +268,6 @@
 
 
 
-    _buildSqlQuery : function()
-    {
-
-    },
-
-
     /**
      * (internal) creates a sql string from a filter array.
      * @param {Array} search  search/filter array
@@ -224,6 +276,9 @@
      */
     _buildSqlFromFilterArray : function (search, logicOperator)
     {
+      this._sql = "";
+      this._sqlValues = "";
+
       if (!$.isArray(search)) { throw new Error("missing or wrong parameter search. got " + (typeof search) + " need Array"); }
       if (!search.length) { return ""; } // empty search == empty sql query
 
@@ -235,7 +290,7 @@
 
       var
         sql = "",
-        openBracket = true   // if true, the logicOperator will be supressed
+        openBracket = true   // if true, the logicOperator will be suppressed
         ;
 
       // search[t] has to be:
@@ -304,9 +359,8 @@
         // handle string clauses
         if (entryType === "string")
         {
-          entry[1] = _prepareSearchOperator(entry[1]);
+          entry[1] = this._prepareSearchOperator(entry, 1, 2, t);
         }
-
 
 
 
@@ -315,6 +369,8 @@
       }
 
 
+      this._sql = sql;
+      return sql;
     },
 
 
@@ -326,7 +382,7 @@
      */
     _buildSqlLimit : function(limit)
     {
-      if (limit == undefined || limit == '')  return '';
+      if (!limit)  return '';
 
       var sqlLimit = '';
 
@@ -351,7 +407,7 @@
      */
     _buildSqlOrderBy : function(orderBy)
     {
-      if (orderBy == undefined || orderBy == '')  return '';
+      if (!orderBy)  return '';
 
       var sqlOrderBy = [], allowedDir = {ASC : true, DESC : true};
 
@@ -408,12 +464,14 @@
 
     /**
      * (internal) helper for _buildSqlFromFilterArray() to prepare the operator.
-     * @param {Array} entry the actual search row entry
+     *
+     * @param {Array} entry the actual search row entry (will be changed if operator is ISNULL or NOT ISNULL)
      * @param {Number} opIndex index number of the operator in entry
-     * @param {Number} searchIndex the actual search row (used for exception infos)
+     * @param {Number} valueIndex index number of the value field in entry
+     * @param {Number} searchIndex the actual search row (used for exception informations)
      * @private
      */
-    _prepareSearchOperator : function(entry, opIndex, searchIndex)
+    _prepareSearchOperator : function (entry, opIndex, valueIndex, searchIndex)
     {
       if (!entry[opIndex] || entry[opIndex] == undefined)
       {
@@ -425,14 +483,26 @@
         throw new Error("wrong operator type (" + (typeof entry[opIndex]) + ") in search[" + searchIndex + "][" + opIndex + "]");
       }
 
-      entry[opIndex] = entry[opIndex].trim().toUpperCase();
+      var operator = entry[opIndex].trim().toUpperCase();
 
-      if (!this.SQL_OPERATORS.hasOwnProperty(entry[opIndex]) &&
-          !this.SQL_OPERATORS_ARRAY.hasOwnProperty(entry[opIndex])
+      if (!this.SQL_OPERATORS.hasOwnProperty(operator) &&
+          !this.SQL_OPERATORS_ARRAY.hasOwnProperty(operator)
          )
       {
-        throw new Error("unknown operator '" + entry[opIndex] + "' in search[" + searchIndex + "][" + opIndex + "]");
+        throw new Error("unknown operator '" + operator + "' in search[" + searchIndex + "][" + opIndex + "]");
       }
+
+      // special treatment for ISNULL or NOT ISNULL
+      if (operator.indexOf("ISNULL") > -1)
+      {
+        entry[0] = new $.SqlClause(operator + "(" + entry[0] + ")");
+        entry[valueIndex] = '';
+        entry[3] = this._getLogicOperator(entry[valueIndex], '');
+
+        operator = '';
+      }
+
+      return operator;
     },
 
 
@@ -441,52 +511,85 @@
      * @param {Array} entry the actual search row entry
      * @param {Number} valueIndex the index number for the value field in entry
      * @param {Number} opIndex index number of the operator in entry
-     * @param {Number} searchIndex the actual search row (used for exception infos)
+     * @param {Number} searchIndex the actual search row (used for exception informations)
      * @private
      */
-    _prepareSearchValue : function(entry, valueIndex, opIndex, searchIndex)
+    _prepareSearchValue : function (entry, opIndex, valueIndex, searchIndex)
     {
-      if (!entry.hasOwnProperty(valueIndex) || entry[valueIndex] == undefined)
+      if (!entry.hasOwnProperty(""+valueIndex) || entry[valueIndex] == undefined)
       {
         throw new Error("missing or empty value in search[" + searchIndex + "][" + valueIndex + "]");
       }
 
-      var value = entry[valueIndex];
+      var value = entry[valueIndex], operator = entry[opIndex];
 
 
       // special treatment for array operator with string values (which should be converted to arrays)
-      if ()
-
-
-      if (isString(value) === "string")
+      if (this.SQL_OPERATORS_ARRAY.hasOwnProperty(operator) && isString(value))
       {
-
+        value = value.split(/\s*,\s*/);
       }
-      else if (isNumeric(value) === "number")
+
+
+      if (isString(value) || isNumeric(value))
       {
-        // allowed value => nothing to do
+        this._sqlValues.push(value);
+        value = "?";
       }
       else if (typeof value === "boolean")
       {
-        value = parseInt(value, 10);
+        // convert bool to INT because SQlite don't know boolean values
+        this._sqlValues.push(value + 0);
+        value = "?";
       }
       else if (value === null)
       {
-        value = "NULL";
+        this._sqlValues.push("NULL");
+        value = "?";
       }
       else if ($.isArray(value))
       {
+        if (!this.SQL_OPERATORS_ARRAY.hasOwnProperty(operator))
+        {
+          throw new Error("unsupported array for skalar sql operator in search[" + searchIndex + "][" + valueIndex + "]: [" + value.join(", ") + "] (" + (typeof value) + ")");
+        }
 
+        if (operator === "BETWEEN")
+        {
+          if (value.length !== 2)
+          {
+            throw new Error("unsupported array length for BETWEEN operator in search[" + searchIndex + "][" + valueIndex + "]: [" + value.join(", ") + "] (" + (typeof value) + ")");
+          }
+
+          this._sqlValues.push(value[0], value[1]);
+          value = "(? AND ?)";
+        }
+        // array operators like IN, NOT IN
+        else
+        {
+          var tmp = "(";
+          for (var tt in value)
+          {
+            tmp+=(tt !== 0 ? ", " : "") + "?";
+            this._sqlValues.push(value[tt]);
+          }
+          value = tmp + ")";
+        }
       }
       else if (value instanceof $.SqlClause)
       {
         value = value.get();
+        if (value.hasValues())
+        {
+          this._sqlValues.push.apply(this._sqlValues, value.values());
+        }
       }
       else
       {
-        throw new Error("unsupported value in search[" + searchIndex + "][" + valueIndex + "]: '" + value + "' (" + valueType + ")");
+        throw new Error("unsupported value in search[" + searchIndex + "][" + valueIndex + "]: '" + value + "' (" + (typeof value) + ")");
       }
 
+      return value;
     }
 
 
