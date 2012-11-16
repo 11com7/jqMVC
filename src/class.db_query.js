@@ -51,7 +51,10 @@
     /**
      * @inheritDoc
      */
-    get : $.SqlClause.prototype.toString,
+    get : function()
+    {
+      return this.toString();
+    },
 
     /**
      * @return {Boolean} TRUE if this SqlClause object has one or more sql values.
@@ -173,6 +176,10 @@
       sqlWhere = this._buildSqlFromFilterArray(search, "AND");
 
 
+      this._sql = "SELECT " + sqlColumns + " FROM " + this._table +
+                  (sqlWhere ? " WHERE " + sqlWhere : "");
+
+      return this._sql;
     },
 
     /**
@@ -276,8 +283,7 @@
      */
     _buildSqlFromFilterArray : function (search, logicOperator)
     {
-      this._sql = "";
-      this._sqlValues = "";
+      this._sqlValues = [];
 
       if (!$.isArray(search)) { throw new Error("missing or wrong parameter search. got " + (typeof search) + " need Array"); }
       if (!search.length) { return ""; } // empty search == empty sql query
@@ -286,6 +292,11 @@
       if (!this.SQL_OPERATORS_LOGIC[logicOperator])
       {
         throw new Error("unknown logicOperator '" + logicOperator + " (" + (typeof logicOperator) + "). accepts only: " + this.SQL_OPERATORS_LOGIC.join(', '));
+      }
+
+      if (!$.isArray(search[0]))
+      {
+        search = [search];
       }
 
       var
@@ -357,19 +368,58 @@
 
 
         // handle string clauses
-        if (entryType === "string")
+        if (isString(entry[0]))
         {
-          entry[1] = this._prepareSearchOperator(entry, 1, 2, t);
+          if (entry[1])
+          {
+            entry[1] = this._prepareSearchOperator(entry, 1, 2, t);
+          }
+
+
+          if (typeof entry[2] !== "undefined")
+          {
+            entry[2] = this._prepareSearchValue(entry, 1, 2, t);
+          }
+
+          entry[3] = this._getLogicOperator(entry[3], logicOperator);
+          if (!this.SQL_OPERATORS_LOGIC.hasOwnProperty(entry[3]))
+          {
+            throw new Error("search[" + t + "][3] unsupported logic operator '" + entry[3] + "'. has to be '" + this.SQL_OPERATORS_LOGIC.join("', '") + "'");
+          }
         }
 
+        if (!openBracket)
+        {
+          sql += " " + entry[3] + " ";
+        }
+
+        openBracket = false;
 
 
+        console.log("buildSql --> ", entry[0], typeof entry[0], isString(entry[0]), entry[0] instanceof $.SqlClause);
+
+        if (isString(entry[0]))
+        {
+          entry.length = 3;
+          sql += "(" + entry.join(" ") + ")";
+        }
+        else if (entry[0] instanceof $.SqlClause)
+        {
+          sql += "(" + entry[0].get() + ")";
+          if (entry[0].hasValues())
+          {
+            this._sqlValues.push.apply(this._sqlValues, entry[0].values());
+          }
+        }
+        else
+        {
+          throw new Error("search[" + t + "][0] unsupported field type (" + (typeof entry[0]) + ")");
+        }
 
 
       }
 
 
-      this._sql = sql;
       return sql;
     },
 
@@ -496,7 +546,7 @@
       if (operator.indexOf("ISNULL") > -1)
       {
         entry[0] = new $.SqlClause(operator + "(" + entry[0] + ")");
-        entry[valueIndex] = '';
+        entry[valueIndex] = undefined;
         entry[3] = this._getLogicOperator(entry[valueIndex], '');
 
         operator = '';
@@ -570,7 +620,7 @@
           var tmp = "(";
           for (var tt in value)
           {
-            tmp+=(tt !== 0 ? ", " : "") + "?";
+            tmp+=(tt != 0 ? ", " : "") + "?";
             this._sqlValues.push(value[tt]);
           }
           value = tmp + ")";
