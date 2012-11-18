@@ -101,10 +101,18 @@
     this._table = tableName;
 
     /**
+     * sqlite-lib object.
      * @type {$.db}
      * @private
      */
     this._db = (options && options.db) ? options.db : $.db;
+
+    /**
+     * JavaScript database object for W3C web sql database interface.
+     * @type {Database}
+     * @private
+     */
+    this._database = this._db.getDatabase();
 
     /**
      * callback function which will be called for every search filter element.
@@ -139,119 +147,107 @@
                     'ISNULL', 'NOT ISNULL',
                     'EXISTS', 'NOT EXISTS', 'ALL', 'ANY']),
 
-    SQL_OPERATORS_ARRAY : flipToObject(['BETWEEN', 'IN', 'NOT IN']),
+    SQL_OPERATORS_ARRAY : flipToObject(['BETWEEN', 'NOT BETWEEN', 'IN', 'NOT IN']),
 
     SQL_OPERATORS_LOGIC : flipToObject(['AND', 'OR', 'XOR', 'NOT']),
 
 
+
+    // ================================================================================================================
+    // SEARCH
+    // ================================================================================================================
     /**
      * Builds and runs a sql query from search array and method parameter.
-     * @param {Array} search  filter array
-     * @param {Array|null} [columnList] (array) with existing columns, or $.SqlClause-Objects |
+     * @param {Array} search  filter array (empty array returns all entries)
+     * @param {Array|null} [columns] (array) with existing columns, or $.SqlClause-Objects |
      *                                  (null) for all columns
      * @param {Number|Array|null} [limit=0]
      * @param {String} [logicOperator='AND']
      * @param {String|Array} [orderBy='']
+     * @param {Function} successCallback
+     * @param {Function} [errorCallback]
      */
-    search : function(search, columnList, limit, logicOperator, orderBy)
+    search : function(search, columns, limit, logicOperator, orderBy, successCallback, errorCallback)
     {
-      if (!$.isArray(search) || search.length < 1)
-      {
-        throw new Error("empty or no search array");
-      }
+      this.prepareSearch(search, columns, limit, logicOperator, orderBy);
+      this.execute(successCallback, errorCallback);
+    },
 
+
+    /**
+     * Builds and ruturns a sql query from search array and method parameter.
+     * @param {Array} search  filter array (empty array returns all entries)
+     * @param {Array|null} [columns] (array) with existing columns, or $.SqlClause-Objects |
+     *                                  (null) for all columns
+     * @param {Number|Array|null} [limit=0]
+     * @param {String} [logicOperator='AND']
+     * @param {String|Array} [orderBy='']
+     * @return {String}
+     */
+    prepareSearch :function(search, columns, limit, logicOperator, orderBy)
+    {
       var
-        returnSingle = true,
-        returnColumns = this._searchPrepareReturnColumns(columnList),
-        sqlColumns = "",
+        returnColumns = this._searchPrepareReturnColumns(columns),
         sqlWhere = ""
         ;
 
       if (!returnColumns)  { throw new Error("no return columns"); }
 
-      returnSingle = this._searchIsSingleReturn(returnColumns);
+      sqlWhere = this._buildSqlFromFilterArray(search);
 
-      sqlColumns = this._buildSqlColumns(returnColumns);
-
-      sqlWhere = this._buildSqlFromFilterArray(search, "AND");
-
-
-      this._sql = "SELECT " + sqlColumns + " FROM " + this._table +
+      this._sql = "SELECT " +
+                  this._buildSqlColumns(returnColumns) +
+                  " FROM " + this._table +
                   (sqlWhere ? " WHERE " + sqlWhere : "");
+
+      if (orderBy)
+      {
+        this._sql += this._buildSqlOrderBy(orderBy);
+      }
+
+      if (limit)
+      {
+        this._sql += this._buildSqlLimit(limit);
+      }
+
 
       return this._sql;
     },
 
-    /**
-     * (internal) Returns an array with existing column names or sqlClause objects.
-     * @param {Array|null} [columnList]  array with fieldnames or SqlClaus objects
-     * @return {Array}
-     * @private
-     * @throws Error for non existing column names or unknown types
-     */
-    _searchPrepareReturnColumns : function(columnList)
-    {
-      var returnColumns = [], columns = this._db.getColumns(this._table);
 
-      if (!$.isArray(columnList) || columnList.length < 1)
-      {
-        return columns;
-      }
-      else if ($.isArray(columnList))
-      {
-        for (var t = 0; t < columnList.length; t++)
-        {
-          if (isString(columnList[t]))
-          {
-            if (columns.indexOf(columnList[t]) === -1)
-            {
-              throw new Error("unknown column in columnList[" + t + "]: ' " + columnList[t] + "'" );
-            }
-
-            returnColumns.push(columnList[t]);
-          }
-          else if ($.isObject(columnList[t]))
-          {
-            returnColumns.push(columnList[t]);
-          }
-          else
-          {
-            throw new Error("unaccepted column type columnList[" + t + "] (" + (typeof columnList[t]) + ")" );
-          }
-        }
-
-        return returnColumns;
-      }
-    },
-
-    _searchIsSingleReturn : function(columnList)
-    {
-      return columnList.length == 1;
-    },
-
-    _buildSqlColumns : function(columnList)
-    {
-      var columns = [];
-
-      columnList.map(function(column)
-      {
-        columns.push( (column instanceof $.SqlClause) ? column.get() : column );
-      });
-
-      return columns.join(", ");
-    },
-
-
+    // ================================================================================================================
+    // COUNT
+    // ================================================================================================================
     /**
      *
-     * @param {Array} search
-     * @param {String} [logicOperator]
+     * @param {Array} search  filter array (empty array returns all entries)
+     * @param {String} [logicOperator='AND']
+     * @param {Function} errorCallback
+     * @param {Function} successCallback
      */
-    count : function(search, logicOperator)
+    count : function(search, logicOperator, successCallback, errorCallback)
     {
-
+      this.prepareCount(search, logicOperator);
+      this.executeOneValue(successCallback, errorCallback);
     },
 
+    /**
+     * Builds and returns a COUNT sql query.
+     * @param {Array} search  filter array (empty array returns all entries)
+     * @param {String} [logicOperator='AND']
+     * @return {String}
+     */
+    prepareCount : function(search, logicOperator)
+    {
+      this._sql = "SELECT COUNT(*) FROM " + this._table + " " + this._buildSqlFromFilterArray(search, logicOperator);
+
+      return this._sql;
+    },
+
+
+    // ================================================================================================================
+    // DELETE
+    // ================================================================================================================
     /**
      * Deletes one or many rows from a table.
      * @param {Array} search
@@ -263,22 +259,118 @@
 
     },
 
+
+    // ================================================================================================================
+    // EXECUTE
+    // ================================================================================================================
+    /**
+     * This function executes the actual SQL command.
+     * They had to be build with one of the builXyz()-methods.
+     * @param {Function} successCallback
+     * @param {Function} [errorCallback]
+     */
+    execute : function(successCallback, errorCallback)
+    {
+      var self = this;
+
+      this._database.transaction(
+        function(tx)
+        {
+          tx.executeSql(self.getSql(), self.getValues(), successCallback, errorCallback)
+        }
+      );
+    },
+
+    /**
+     * This function executes the actual SQL command.
+     * They had to be build with one of the builXyz()-methods.
+     * @param {Function} successCallback
+     * @param {Function} [errorCallback]
+     */
+    executeOneValue : function(successCallback, errorCallback)
+    {
+      var self = this;
+
+      this._database.transaction(
+        function(tx)
+        {
+          tx.executeSql(self.getSql(), self.getValues(),
+            function(tx, results)
+            {
+              var value = null;
+              if (results.rows.length)
+              {
+                console.log(results.rows.item(0));
+              }
+
+              if ($.isFunction(successCallback)) { successCallback(value); }
+            },
+            errorCallback)
+        }
+      );
+    },
+
+
+    // ================================================================================================================
+    // accessors
+    // ================================================================================================================
+    /**
+     * Set a database object (used by execute()).
+     * @param {$.db} db
+     */
     setDb : function(db)
     {
       this._db = db;
     },
 
+    /**
+     * Return the table (or view) name.
+     * @return {String}
+     */
     getTableName : function()
     {
       return this._table;
     },
 
+    /**
+     * Return the actual SQL query string (will be created by prepare[Search|Count|DeleteSearch|…]).
+     * @return {String}
+     */
+    getSql : function()
+    {
+      return this._sql;
+    },
 
+    /**
+     * Return the values for the actual SQL query (if there are no elements, it returns an empty array).
+     * @return {Array}
+     */
+    getValues : function()
+    {
+      return this._sqlValues;
+    },
+
+
+
+    // ================================================================================================================
+    // build sql helper
+    // ================================================================================================================
+    _buildSqlColumns : function(columns)
+    {
+      var returnColumns = [];
+
+      columns.map(function(column)
+      {
+        returnColumns.push( (column instanceof $.SqlClause) ? column.get() : column );
+      });
+
+      return returnColumns.join(", ");
+    },
 
     /**
      * (internal) creates a sql string from a filter array.
      * @param {Array} search  search/filter array
-     * @param {String} [logicOperator] default operator between filter array elements
+     * @param {String} [logicOperator] default operator between filter array elements, default value: AND
      * @private
      */
     _buildSqlFromFilterArray : function (search, logicOperator)
@@ -286,7 +378,7 @@
       this._sqlValues = [];
 
       if (!$.isArray(search)) { throw new Error("missing or wrong parameter search. got " + (typeof search) + " need Array"); }
-      if (!search.length) { return ""; } // empty search == empty sql query
+      if (!search.length) { return ""; } // empty search == empty WHERE
 
       logicOperator = (logicOperator && logicOperator.length) ? logicOperator.toUpperCase() : "AND";
       if (!this.SQL_OPERATORS_LOGIC[logicOperator])
@@ -394,9 +486,6 @@
         }
 
         openBracket = false;
-
-
-        console.log("buildSql --> ", entry[0], typeof entry[0], isString(entry[0]), entry[0] instanceof $.SqlClause);
 
         if (isString(entry[0]))
         {
@@ -512,6 +601,52 @@
       return columnName.trim().toLowerCase();
     },
 
+
+    // ================================================================================================================
+    // prepare helper
+    // ================================================================================================================
+    /**
+     * (internal) Returns an array with existing column names or sqlClause objects.
+     * @param {Array|null} [columnList]  array with fieldnames or SqlClaus objects
+     * @return {Array}
+     * @private
+     * @throws Error for non existing column names or unknown types
+     */
+    _searchPrepareReturnColumns : function(columnList)
+    {
+      var returnColumns = [], columns = this._db.getColumns(this._table);
+
+      if (!$.isArray(columnList) || columnList.length < 1)
+      {
+        return columns;
+      }
+      else if ($.isArray(columnList))
+      {
+        for (var t = 0; t < columnList.length; t++)
+        {
+          if (isString(columnList[t]))
+          {
+            if (columns.indexOf(columnList[t]) === -1)
+            {
+              throw new Error("unknown column in columns[" + t + "]: '" + columnList[t] + "'" );
+            }
+
+            returnColumns.push(columns[t]);
+          }
+          else if ($.isObject(columnList[t]))
+          {
+            returnColumns.push(columnList[t]);
+          }
+          else
+          {
+            throw new Error("unaccepted column type columns[" + t + "] (" + (typeof columnList[t]) + ")" );
+          }
+        }
+
+        return returnColumns;
+      }
+    },
+
     /**
      * (internal) helper for _buildSqlFromFilterArray() to prepare the operator.
      *
@@ -612,7 +747,7 @@
           }
 
           this._sqlValues.push(value[0], value[1]);
-          value = "(? AND ?)";
+          value = "? AND ?";
         }
         // array operators like IN, NOT IN
         else
