@@ -365,6 +365,20 @@
     return ($.db.tableExists(tableName) && column && _getColumnIndex(tableName, column) > -1);
   };
 
+  /**
+   * Returns the database (if it isn't already opened, getDatabase will open the database).
+   * @return {Database}
+   */
+  $.db.getDatabase = function()
+  {
+    if (!$.db.isOpen())
+    {
+      $.db.initDb();
+    }
+
+    return database;
+  };
+
 
   // ===================================================================================================================
   // init db
