@@ -723,7 +723,7 @@
       }
       else if (typeof value === "boolean")
       {
-        // convert bool to INT because SQlite don't know boolean values
+        // convert bool to INT because sqlite don't know boolean values
         this._sqlValues.push(value + 0);
         value = "?";
       }
