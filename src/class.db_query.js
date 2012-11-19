@@ -239,7 +239,12 @@
      */
     prepareCount : function(search, logicOperator)
     {
-      this._sql = "SELECT COUNT(*) FROM " + this._table + " " + this._buildSqlFromFilterArray(search, logicOperator);
+      var sqlWhere = this._buildSqlFromFilterArray(search, logicOperator);
+      this._sql = "SELECT COUNT(*) FROM " + this._table;
+      if (sqlWhere)
+      {
+        this._sql += " WHERE " + sqlWhere;
+      }
 
       return this._sql;
     },
@@ -300,7 +305,8 @@
               var value = null;
               if (results.rows.length)
               {
-                console.log(results.rows.item(0));
+                value = $.map(results.rows.item(0), function(val) { return val; });
+                value = value[0][0];
               }
 
               if ($.isFunction(successCallback)) { successCallback(value); }
