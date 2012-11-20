@@ -223,7 +223,7 @@
      * @param {Array} search  filter array (empty array returns all entries)
      * @param {String} [logicOperator='AND']
      * @param {Function} errorCallback
-     * @param {Function} successCallback
+     * @param {Function} [successCallback]
      */
     count : function(search, logicOperator, successCallback, errorCallback)
     {
@@ -258,10 +258,31 @@
      * @param {Array} search
      * @param {Number|Array|null} [limit]
      * @param {String} [logicOperator]
+     * @param {Function} errorCallback
+     * @param {Function} [successCallback]
      */
-    deleteSearch : function(search, limit, logicOperator)
+    deleteSearch : function(search, limit, logicOperator, successCallback, errorCallback)
     {
+      this.prepareDeleteSearch(search, limit, logicOperator);
+      this.execute(successCallback, errorCallback);
+    },
 
+    /**
+     * Builds and return a DELETE sql query.
+     * @param {Array} search
+     * @param {Number|Array|null} [limit]
+     * @param {String} [logicOperator]
+     * @return {String}
+     */
+    prepareDeleteSearch : function(search, limit, logicOperator)
+    {
+      var sqlWhere = this._buildSqlFromFilterArray(search, logicOperator);
+
+      this._sql = "DELETE FROM " + this._table;
+      this._sql += (sqlWhere) ? " WHERE " + sqlWhere : "";
+      this._sql += this._buildSqlLimit(limit);
+
+      return this._sql;
     },
 
 
@@ -281,7 +302,7 @@
       this._database.transaction(
         function(tx)
         {
-          tx.executeSql(self.getSql(), self.getValues(), successCallback, errorCallback)
+          tx.executeSql(self.getSql(), self.getValues(), successCallback, errorCallback);
         }
       );
     },
@@ -314,6 +335,23 @@
             errorCallback)
         }
       );
+    },
+
+    /**
+     * Execute the sql query in an opened tranaction.
+     * @param {SQLTransaction} tx
+     * @param {Function} [successCallback]
+     * @param {Function} [errorCallback]
+     */
+    executeInTransaction : function(tx, successCallback, errorCallback)
+    {
+      if (!tx || !tx instanceof SQLTransaction)
+      {
+        throw new Error("undefined or incompatible transaction tx (" + (typeof tx) + ")");
+      }
+
+      //noinspection JSValidateTypes
+      tx.executeSql(this.getSql(), this.getValues(), successCallback, errorCallback);
     },
 
 
