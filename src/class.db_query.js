@@ -101,7 +101,7 @@
     this._table = tableName;
 
     /**
-     * sqlite-lib object.
+     * sqlite library object.
      * @type {$.db}
      * @private
      */
@@ -175,7 +175,7 @@
 
 
     /**
-     * Builds and ruturns a sql query from search array and method parameter.
+     * Builds and returns a sql query from search array and method parameter.
      * @param {Array} search  filter array (empty array returns all entries)
      * @param {Array|null} [columns] (array) with existing columns, or $.SqlClause-Objects |
      *                                  (null) for all columns
@@ -188,7 +188,7 @@
     {
       var
         returnColumns = this._searchPrepareReturnColumns(columns),
-        sqlWhere = ""
+        sqlWhere
         ;
 
       if (!returnColumns)  { throw new Error("no return columns"); }
@@ -241,10 +241,7 @@
     {
       var sqlWhere = this._buildSqlFromFilterArray(search, logicOperator);
       this._sql = "SELECT COUNT(*) FROM " + this._table;
-      if (sqlWhere)
-      {
-        this._sql += " WHERE " + sqlWhere;
-      }
+      this._sql += (sqlWhere) ? " WHERE " + sqlWhere : "";
 
       return this._sql;
     },
@@ -291,7 +288,7 @@
     // ================================================================================================================
     /**
      * This function executes the actual SQL command.
-     * They had to be build with one of the builXyz()-methods.
+     * They had to be build with one of the buildXyz()-methods.
      * @param {Function} successCallback
      * @param {Function} [errorCallback]
      */
@@ -309,7 +306,7 @@
 
     /**
      * This function executes the actual SQL command.
-     * They had to be build with one of the builXyz()-methods.
+     * They had to be build with one of the buildXyz()-methods.
      * @param {Function} successCallback
      * @param {Function} [errorCallback]
      */
@@ -338,7 +335,7 @@
     },
 
     /**
-     * Execute the sql query in an opened tranaction.
+     * Execute the sql query in an opened transaction.
      * @param {SQLTransaction} tx
      * @param {Function} [successCallback]
      * @param {Function} [errorCallback]
@@ -365,6 +362,7 @@
     setDb : function(db)
     {
       this._db = db;
+      this._database = db.getDatabase();
     },
 
     /**
@@ -441,7 +439,7 @@
         ;
 
       // search[t] has to be:
-      // - string clause: ['column', 'operator', 'value' | {SqlCLause}, ['logicOperator']]
+      // - string clause: ['column', 'operator', 'value' | {SqlClause}, ['logicOperator']]
       // - brackets:      ['(' | ')', ['logicOperator']] | '(' | ')'
       // - SqlClause:     [{SqlClause}, ['logicOperator']] | {SqlClause}
       for (var t=0; t < search.length; t++)
