@@ -1,6 +1,6 @@
 //noinspection JSCheckFunctionSignatures
 /**
- * DbQuery - This class allows to create different queries with simple array structures. 
+ * DbQuery - This class allows to create different queries with simple array structures.
  *
  * Copyright 2012 11com7, Bonn, Germany
  * @author Dominik Pesch <d.pesch@11com7.de>
@@ -10,9 +10,8 @@
 {
   "use strict";
 
-
   /**
-   * SqlClause - wraps "complex" sql clause strings in an object.
+   * $.SqlClause - wraps sql clause strings with parameter values in an object and could be passed to $.DbQuery().
    * @param {String} sqlClause
    * @param {Array} [sqlValues] sql values for '?' parameter in the sqlClause
    * @constructor
@@ -83,6 +82,32 @@
 
   /**
    * DbQuery - this class helps to create sql select statements with arrays.
+   *
+   * Queries are build with a filter/search array:<pre>
+   * Simple:
+   *  ['a', '=', 1] => "WHERE a=?"; [1]
+   *  ['b', 'between', "5,6"] => "WHERE b BETWEEN (?,?)"; [5, 6]
+   *  ['b', 'between', [5,6]] => "WHERE b BETWEEN (?,?)"; [5, 6]
+   *
+   * With logic operators
+   *  [['a', '=', 1], ['b', '!=', 1]] => "WHERE (a = ?) AND (b != ?)"; [1, 1]
+   *  [['a', '=', 1], ['b', '!=', 1, "OR"]] => "WHERE (a = ?) OR (b != ?)"; [1, 1]
+   *  or with logicOperator = "OR"
+   *  [['a', '=', 1], ['b', '!=', 1]] => "WHERE (a = ?) OR (b != ?)"; [1, 1]
+   *
+   * With parenthesis
+   * [['('], ['a', '=', 1], ['b', '!=', 1], [')'], ['c', 'IN', [6,7,8,9], "OR"]]
+   * => WHERE ((a = ?) AND (b != ?)) OR (c IN (?, ?, ?, ?)); [1, 1, 6, 7, 8, 9]
+   *
+   * With $.SqlClause objects
+   * ['z', 'IN', new $.SqlClause('SELECT id FROM foo WHERE a=? and b=?', [5, 6])]
+   * => WHERE (z IN SELECT id FROM foo WHERE a=? and b=?); [5, 6]
+   *
+   * And a little bit more complex
+   * [['y','not in',"5,6,7,8,9"], ['z', 'IN', new $.SqlClause('SELECT id FROM foo WHERE a=? and b=?', [42, 1337])]]
+   * => (y NOT IN (?, ?, ?, ?, ?)) AND (z IN SELECT id FROM foo WHERE a=? and b=?); ["5", "6", "7", "8", "9", 42, 1337]
+   * </pre>
+   *
    * @param {String} tableName
    * @param {Object} [options]
    * @constructor
@@ -366,7 +391,7 @@
     },
 
     /**
-     * Return the table (or view) name.
+     * Returns the table (or view) name.
      * @return {String}
      */
     getTableName : function()
@@ -375,7 +400,7 @@
     },
 
     /**
-     * Return the actual SQL query string (will be created by prepare[Search|Count|DeleteSearch|…]).
+     * Returns the actual SQL query string (will be created by prepare[Search|Count|DeleteSearch|…]).
      * @return {String}
      */
     getSql : function()
@@ -384,7 +409,7 @@
     },
 
     /**
-     * Return the values for the actual SQL query (if there are no elements, it returns an empty array).
+     * Returns the values for the actual SQL query (if there are no elements, it returns an empty array).
      * @return {Array}
      */
     getValues : function()
@@ -392,11 +417,27 @@
       return this._sqlValues;
     },
 
+    /**
+     * Returns the sql query as SqlClause object.
+     * @return {$.SqlClause}
+     */
+    getSqlClause : function()
+    {
+      return new $.SqlClause(this.getSql(), this.getValues());
+    },
+
 
 
     // ================================================================================================================
     // build sql helper
     // ================================================================================================================
+    /**
+     * (internal) build an sql string from a column array with column names (string) or $.SqlClause objects.
+     * For $.SqlClause objects the string representation will be used.
+     * @param {Array} columns
+     * @return {String}
+     * @private
+     */
     _buildSqlColumns : function(columns)
     {
       var returnColumns = [];
@@ -408,6 +449,7 @@
 
       return returnColumns.join(", ");
     },
+
 
     /**
      * (internal) creates a sql string from a filter array.
@@ -546,10 +588,7 @@
         {
           throw new Error("search[" + t + "][0] unsupported field type (" + (typeof entry[0]) + ")");
         }
-
-
       }
-
 
       return sql;
     },
@@ -628,19 +667,34 @@
     },
 
 
-    _getLogicOperator : function(op1, op2)
+    /**
+     * (internal) Checks if op1 is a valid operator and converts it to upper case; otherwise the default operator (defaultOp or AND) will be returned.
+     * @param {String} op1
+     * @param {String} [defaultOp]
+     * @return {String}
+     * @private
+     */
+    _getLogicOperator : function(op1, defaultOp)
     {
-      return (op1 && this.SQL_OPERATORS_LOGIC[op1.toUpperCase()]) ? op1.toUpperCase() : op2;
+      defaultOp = defaultOp || "AND";
+      return (op1 && this.SQL_OPERATORS_LOGIC[op1.toUpperCase()]) ? op1.toUpperCase() : defaultOp.toUpperCase();
     },
 
-    _prepareColumnName : function(columnName)
+
+    /**
+     * (internal) Trims and convert the column to lower case letters.
+     * @param column
+     * @return {String}
+     * @private
+     */
+    _prepareColumnName : function(column)
     {
-      if (!columnName || typeof columnName !== "string")
+      if (!column || typeof column !== "string")
       {
-        throw new Error("invalid or empty column name: '" + columnName + "' (" + (typeof columnName) + "). has to be non empty string!");
+        throw new Error("invalid or empty column name: '" + column + "' (" + (typeof column) + "). has to be non empty string!");
       }
 
-      return columnName.trim().toLowerCase();
+      return column.trim().toLowerCase();
     },
 
 
@@ -805,11 +859,12 @@
       }
       else if (value instanceof $.SqlClause)
       {
-        value = value.get();
         if (value.hasValues())
         {
           this._sqlValues.push.apply(this._sqlValues, value.values());
         }
+
+        value = value.get();
       }
       else
       {
@@ -818,13 +873,6 @@
 
       return value;
     }
-
-
-
-
-
-
-
 
   };
 
@@ -841,11 +889,22 @@
   }
 
 
+  /**
+   * Returns TRUE if test is a string.
+   * @param {*} test
+   * @return {Boolean}
+   */
   function isString(test)
   {
     return typeof test === "string";
   }
 
+  /**
+   * Flips an array to an object by swapping the array values to object keys.
+   * @example ['a', 'b', 'c'] => {a:0, b:1, c:2}
+   * @param {Array} array
+   * @return {Object}
+   */
   function flipToObject(array)
   {
     var obj = {};
@@ -861,7 +920,5 @@
 
     return obj;
   }
-
-
 
 })(jq, window);
