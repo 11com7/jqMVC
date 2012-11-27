@@ -364,53 +364,60 @@
      * @api private
      */
     $.mvc.model.prototype = {
-        //Load a single object by id
-        get: function(id,callback) {
-            var self=this;
-            var el = new $.mvc.model(this.modelName,baseOpts[this.modelName]);
-            storageAdapters[this.modelName].get(id,
-                function(theObj){
-                    el=$.extend(el,theObj);
-                    el.modelName=self.modelName;
-                    el.id=id;
-                    if(callback)
-                       return callback(el);
-                    return el;
-                }
-            );
-
-        },
-        //Get all objects for a given type and executes a callback
-        getAll: function(callback) {
-            return storageAdapters[this.modelName].getAll(this.modelName,callback);
-
-        },
-        //Save an object and executes a callback
-        save: function(callback) {
-            return storageAdapters[this.modelName].save(this,callback);
-
-        },
-        //Remove an object and execute a callback
-        remove: function(callback) {
-            return storageAdapters[this.modelName].remove(this,callback);
-        },
-        //Set properties on the model.  You can pass in a key/value or an object of properties
-        set:function(obj,value){
-           if($.isObject(obj)){
-                obj && obj['modelName'] && delete obj['modelName'];
-                obj && obj['id'] && delete obj['id'];
-                for(var j in obj)
-                {
-                    if(this.hasOwnProperty(j))
-                       this[j]=obj[j];
-                }
-                return;
-           }
-           if(obj.toLowerCase()!="id"&&obj.toLowerCase()!="modelname")
-              this[obj]=value;
-        }
-    };
-
+            //Load a single object by id
+            get: function(id,callback) {
+                var self=this;
+                var el = new $.mvc.model(this.modelName,baseOpts[this.modelName]);
+                storageAdapters[this.modelName].get(id,
+                    function(theObj){
+                        el=$.extend(el,theObj);
+                        el.modelName=self.modelName;
+                        el.id=id;
+                        if(callback)
+                           return callback(el);
+                        return el;
+                    }
+                );
+                
+            },
+            //Get all objects for a given type and executes a callback
+            getAll: function(callback) {
+                return storageAdapters[this.modelName].getAll(this.modelName,callback);
+                
+            },
+            //Save an object and executes a callback
+            save: function(callback) {
+                return storageAdapters[this.modelName].save(this,callback);
+                
+            },
+            //Remove an object and execute a callback
+            remove: function(callback) {
+                return storageAdapters[this.modelName].remove(this,callback);               
+            },
+            //Set properties on the model.  You can pass in a key/value or an object of properties
+            set:function(obj,value){
+               if($.isObject(obj)){
+                    obj && obj['modelName'] && delete obj['modelName'];
+                    obj && obj['id'] && delete obj['id'];
+                    for(var j in obj)
+                    {
+                        if(this.hasOwnProperty(j))
+                           this[j]=obj[j];
+                    }
+                    return;
+               }
+               if(obj.toLowerCase()!="id"&&obj.toLowerCase()!="modelname")
+                  this[obj]=value;
+            },
+            // Returns the storageAdapter
+            getStorageAdapter:function(){
+              return storageAdapters[this.modelName];
+            },
+            // Returns the base options
+            getBaseOptions:function(){
+              return baseOpts[this.modelName];
+            }
+        };
 
     /**
      * This is called to create a new model type.  You pass in the name, default properties and an optional storage adapter
@@ -425,8 +432,6 @@
     $.mvc.model.extend = function(name, obj, storageAdapter) {
         storageAdapters[name] = storageAdapter ? storageAdapter : (localAdapter.linkerCache[name]={},localAdapter);
         return function() {
-            if(storageAdapter!==undefined)
-                $.extend(obj,storageAdapter);
             return new $.mvc.model(name, obj);
         }
     };
