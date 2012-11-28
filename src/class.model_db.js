@@ -70,7 +70,7 @@
   $.mvc.modelDb.prototype.getAll = function(callback){
     "use strict";
 
-    var el = new $.mvc.modelDb(this.modelName, baseOpts[this.modelName]),
+    var el = new $.mvc.modelDb(this.modelName, this.getBaseOptions()),
     storageAdapter = this.getStorageAdapter();
 
     return storageAdapter.getAll.call(storageAdapter, this.modelName, callback, el);
@@ -118,7 +118,8 @@
    * @param {Object} [storageAdapter] - object implementing storageAdapter interface (look below for the default)
    */
   $.mvc.modelDb.extend = function(name, obj, storageAdapter) {
-    this.setStorageAdapter(name, storageAdapter ? storageAdapter : SqliteStorageAdapter);
+    $.mvc.model.extend(name, obj, storageAdapter ? storageAdapter : SqliteStorageAdapter);
+
     return function(values) {
       var el = new $.mvc.modelDb(name, obj);
       if (values && $.isObject(values)) { el.set(values); }
