@@ -40,8 +40,11 @@
    */
   $.mvc.modelDb.prototype.get = function(id, callback)
   {
-    var self=this, el = new $.mvc.modelDb(this.modelName,baseOpts[this.modelName]);
-    storageAdapters[this.modelName].get.call(storageAdapters[this.modelName], id, function(obj) {
+    var self=this,
+      el = new $.mvc.modelDb(this.modelName, this.getBaseOptions()),
+      storageAdapter = this.getStorageAdapter();
+
+    storageAdapter.get.call(storageAdapter, id, function(obj) {
       if (obj)
       {
         el = $.extend(el, obj);
@@ -67,8 +70,10 @@
   $.mvc.modelDb.prototype.getAll = function(callback){
     "use strict";
 
-    var el = new $.mvc.modelDb(this.modelName, baseOpts[this.modelName]);
-    return storageAdapters[this.modelName].getAll.call(storageAdapters[this.modelName], this.modelName, callback, el);
+    var el = new $.mvc.modelDb(this.modelName, baseOpts[this.modelName]),
+    storageAdapter = this.getStorageAdapter();
+
+    return storageAdapter.getAll.call(storageAdapter, this.modelName, callback, el);
   };
 
   /**
@@ -113,7 +118,7 @@
    * @param {Object} [storageAdapter] - object implementing storageAdapter interface (look below for the default)
    */
   $.mvc.modelDb.extend = function(name, obj, storageAdapter) {
-    storageAdapters[name] = storageAdapter ? storageAdapter : (localAdapter.linkerCache[name]=SqliteStorageAdapter);
+    this.setStorageAdapter(name, storageAdapter ? storageAdapter : SqliteStorageAdapter);
     return function(values) {
       var el = new $.mvc.modelDb(name, obj);
       if (values && $.isObject(values)) { el.set(values); }
