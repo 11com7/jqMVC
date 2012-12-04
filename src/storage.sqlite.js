@@ -16,6 +16,8 @@ var SqliteStorageAdapter = (function()
 
   $.extend(SqliteStorageAdapter,
   {
+    dbQuery:null,
+    
     // ===================================================================================================================
     // save()
     // ===================================================================================================================
@@ -294,9 +296,68 @@ var SqliteStorageAdapter = (function()
       {
         $.db.throwSqlError(err, sql || "-- unknown --");
       }
+    },
+
+
+    // ===================================================================================================================
+    // search
+    // ===================================================================================================================
+    search:function(obj, search, callback, errorCallback)
+    {
+      var
+        query = this._prepareDbQuery(obj);
+
+      try
+      {
+        query.search(search, "", 0, "", "", returnObjects, errorCallback);
+      }
+      catch(err)
+      {
+        $.db.throwSqlError(err, query.getSql() || "-- unknown --");
+      }
+
+
+      function returnObjects(tx, results)
+      {
+        if (callback && $.isFunction(callback))
+        {
+          var all = [],
+            hasWakeUp = (obj && obj.__wakeup && $.isFunction(obj.__wakeup));
+
+          for (var t=0; t < results.rows.length; t++)
+          {
+            var el = $.extend({}, obj, results.rows.item(t));
+            all.push(hasWakeUp ? el.__wakeup.call(el) : el);
+          }
+
+          callback(all);
+        }
+      }
+
+    },
+
+
+    // ===================================================================================================================
+    // helper
+    // ===================================================================================================================
+    /**
+     * Creates or return the dbQuery obect.
+     * @return {$.DbQuery}
+     * @private
+     */
+    _prepareDbQuery : function(obj)
+    {
+      if (!$.DbQuery) { throw new Error("$.DbQuery is missing! Please load class.db_query.js."); }
+      
+      if (!this.dbQuery || !this.dbQuery instanceof $.DbQuery)
+      {
+        this.dbQuery = new $.DbQuery(_getTableName(obj), {db: $.db});
+      }
+      
+      return this.dbQuery;
     }
-
-
+    
+    
     // END of class
   });
 
