@@ -111,9 +111,10 @@
    */
   $.mvc.modelDb.prototype.search = function(search, callback, errorCallback)
   {
-    var storageAdapter = this.getStorageAdapter();
+    var el = new $.mvc.modelDb(this.modelName, this.getBaseOptions()),
+      storageAdapter = this.getStorageAdapter();
 
-    storageAdapter.search.call(storageAdapter, callback, errorCallback);
+    storageAdapter.search.call(storageAdapter, el, search, callback, errorCallback);
   };
 
 
