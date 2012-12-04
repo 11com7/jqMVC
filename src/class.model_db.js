@@ -106,6 +106,21 @@
     }
   };
 
+
+  /**
+   * Search (selects) elements from the database.
+   * @param {Object} search
+   * @param {Function} callback
+   * @param {Function} errorCallback
+   */
+  $.mvc.modelDb.prototype.search = function(search, callback, errorCallback)
+  {
+    var storageAdapter = this.getStorageAdapter();
+
+    storageAdapter.search.call(storageAdapter, callback, errorCallback);
+  };
+
+
   /**
    * <p>This is called to create a new extended model type for database storage adapters.
    * You pass in the name, default properties and an optional storage adapter.</p>
