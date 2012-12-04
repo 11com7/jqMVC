@@ -68,8 +68,6 @@
    * @return {Array}
    */
   $.mvc.modelDb.prototype.getAll = function(callback){
-    "use strict";
-
     var el = new $.mvc.modelDb(this.modelName, this.getBaseOptions()),
     storageAdapter = this.getStorageAdapter();
 
@@ -82,8 +80,6 @@
    * @param {*} [value] only used if obj ist key string
    */
   $.mvc.modelDb.prototype.set = function(obj, value){
-    "use strict";
-
     var readOnlyVars = ["id", "modelName", "tableName"];
 
     if (obj && $.isObject(obj))
