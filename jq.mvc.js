@@ -1,3 +1,5 @@
+//jq.mvc.js
+
 //mvc.js
 (function($) {
     /**
@@ -16,6 +18,23 @@
             _totalModels:0,
             _controllersDir:"controllers/",
             _modelsDir:"models/",
+            _baseDir:"",
+            /**
+             * Set the base directory for urls
+             ```
+             app.setBaseDir("starter")
+             ```
+             *@param (String) base directory
+             *@title app.setBaseDir(dir)
+             */
+            setBaseDir:function(str){
+                if(str[0]=="/")
+                    str = str.substr(1);
+                if(str[str.length-1]=="/")
+                    str=str.slice(0,-1);
+                baseUrl+="/"+str;
+            },
+
             /**
              * Looks for route changes via hash change (ala Backbone.js)
              ```
@@ -221,7 +240,7 @@
             viewsTotal[name]=obj.views.length||Object.keys(obj.views).length;
             for (var i in obj.views) 
             {
-                var shortName=typeof(i)==="number"?obj.views[i]:i;
+                var shortName=$.isArray(obj.views)?obj.views[i]:i;
                 if (!viewsCache[shortName] && jq("#" + shortName).length == 0) {
                     $.mvc.controller.addView(obj.views[i],name,shortName);
                     viewsCache[shortName] = 1;
@@ -249,12 +268,16 @@
      * @title $.mvc.controller.route
      */
     $.mvc.route = function(url, evt) {
+         if(typeof(url)!=="string"&&url.nodeName&&url.nodeName.toLowerCase()=="a") 
+            url=url.href;
         var route, axt;
 
         if (url.indexOf(baseUrl) === 0)
             url = url.substring(baseUrl.length, url.length);
         if (url[0] == "/")
             url = url.substr(1);
+        if(url[url.length-1]=="/")
+            url=url.slice(0,-1);
         url = url.split("/");
         
         if(url.length>1){
@@ -406,6 +429,14 @@
                }
                if(obj.toLowerCase()!="id"&&obj.toLowerCase()!="modelname")
                   this[obj]=value;
+            },
+            // Returns the storageAdapter
+            getStorageAdapter:function(){
+              return storageAdapters[this.modelName];
+            },
+            // Returns the base options
+            getBaseOptions:function(){
+              return baseOpts[this.modelName];
             }
         };
 
@@ -423,8 +454,6 @@
     $.mvc.model.extend = function(name, obj, storageAdapter) {
         storageAdapters[name] = storageAdapter ? storageAdapter : (localAdapter.linkerCache[name]={},localAdapter);
         return function() {
-            if(storageAdapter!==undefined)
-                $.extend(obj,storageAdapter);
             return new $.mvc.model(name, obj);
         }
     };
@@ -493,6 +522,10 @@
     };
 
 })(jq);
+
+
+//jq.template.js
+
 /**
  * jq.web.template - a javascript template library
  * Templating from John Resig - http://ejohn.org/ - MIT Licensed
@@ -514,8 +547,10 @@
     (function() {
         var cache = {};
         this.tmpl = function tmpl(str, data) {
-            var fn = !/\W/.test(str) ? cache[str] = cache[str] || tmpl(document.getElementById(str).innerHTML) : new Function("obj", "var p=[],print=function(){p.push.apply(p,arguments);};" + "with(obj){p.push('" + str.replace(/[\r\t\n]/g, " ").replace(/'(?=[^%]*%>)/g, "\t").split("'").join("\\'").split("\t").join("'").replace(/<%=(.+?)%>/g, "',$1,'").split("<%").join("');").split("%>").join("p.push('") + "');}return p.join('');");
+           var fn = !/\W/.test(str)||/.js$/.test(str) ? cache[str] = cache[str]  || tmpl(document.getElementById(str).innerHTML) : new Function("obj", "var p=[],print=function(){p.push.apply(p,arguments);};" + "with(obj){p.push('" + str.replace(/[\r\t\n]/g, " ").replace(/'(?=[^%]*%>)/g, "\t").split("'").join("\\'").split("\t").join("'").replace(/<%=(.+?)%>/g, "',$1,'").split("<%").join("');").split("%>").join("p.push('") + "');}return p.join('');");
             return data ? fn(data) : fn;
         };
     })();
 })(jq);
+
+
