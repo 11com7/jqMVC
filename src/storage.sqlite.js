@@ -70,11 +70,22 @@ var SqliteStorageAdapter = (function()
         _checkTableName(tableName);
         columns = _getWriteColumns(tableName);
 
-        sql = (isNew ? "INSERT INTO " : "UPDATE ") + tableName +
-          " (" + columns.join(", ") + ")" +
-          " VALUES (" + "?".repeat(columns.length, ", ") + ")" +
-          (!isNew ? " WHERE id=?" : "")
-        ;
+        // INSERT statement
+        if (isNew)
+        {
+          sql = "INSERT INTO " + tableName +
+            " (" + columns.join(", ") + ")" +
+            " VALUES (" + "?".repeat(columns.length, ", ") + ")"
+          ;
+        }
+        // UPDATE statement
+        else
+        {
+          sql = "UPDATE " + tableName + " SET " +
+                columns.join("=?, ") + "=?" +
+                " WHERE id=?"
+                ;
+        }
 
         //noinspection JSUnresolvedFunction,JSUnresolvedVariable
         values = $.values((obj.__sleep && $.isFunction(obj.__sleep)) ? obj.__sleep.call(obj) : obj, columns);
