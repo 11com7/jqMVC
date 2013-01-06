@@ -28,7 +28,7 @@
       timestamp_create : 'dt_create',
       timestamp_change : 'dt_change',
       timestamp_type : 'INTEGER',
-      debug : true
+      debug : false
     },
 
     initialized = false,
@@ -42,7 +42,7 @@
     SQL_DT_DEFAULT = "DATETIME('NOW', 'LOCALTIME')",
     SQL_DT_CONSTRAINTS = "NOT NULL DEFAULT (" + SQL_DT_DEFAULT + ")",
     SQL_CREATE_TABLE = "CREATE TABLE IF NOT EXISTS <%=table%> (<%=fields%><%=constraints%>);",
-    SQL_CREATE_INDEX = "CREATE<%=unique> INDEX IF NOT EXISTS <%=name%> ON <%=table%> (<%=fields%>);",
+    SQL_CREATE_INDEX = "CREATE<%=unique%> INDEX IF NOT EXISTS <%=name%> ON <%=table%> (<%=fields%>);",
     SQL_DROP_TABLE = "DROP TABLE IF EXISTS <%=table%>;",
     SQL_DROP_TRIGGER = "DROP TRIGGER IF EXISTS <%=trigger%>;",
     SQL_DROP_INDEX = "DROP INDEX IF EXISTS <%=index%>;",
@@ -504,6 +504,7 @@
     // init SQL transaction
     {
       // Tables
+      sql = "::tables";
       for (var t = 0; t < tables.length; t++)
       {
         if (!!options.dropOnInit)
@@ -519,6 +520,7 @@
       }
 
       // Triggers
+      sql = "::triggers";
       for (var trigger in triggers)
       {
         if (triggers.hasOwnProperty(trigger))
@@ -537,6 +539,7 @@
       }
 
       // Indexes
+      sql = "::indexes";
       for (var index in indexes)
       {
         if (indexes.hasOwnProperty(index))
