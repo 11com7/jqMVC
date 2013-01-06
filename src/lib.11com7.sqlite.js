@@ -42,6 +42,7 @@
     SQL_DT_DEFAULT = "DATETIME('NOW', 'LOCALTIME')",
     SQL_DT_CONSTRAINTS = "NOT NULL DEFAULT (" + SQL_DT_DEFAULT + ")",
     SQL_CREATE_TABLE = "CREATE TABLE IF NOT EXISTS <%=table%> (<%=fields%><%=constraints%>);",
+    SQL_CREATE_INDEX = "CREATE<%=unique> INDEX IF NOT EXISTS <%=name%> ON <%=table%> (<%=fields%>);",
     SQL_DROP_TABLE = "DROP TABLE IF EXISTS <%=table%>;",
     SQL_DROP_TRIGGER = "DROP TRIGGER IF EXISTS <%=trigger%>;",
     SQL_DROP_INDEX = "DROP INDEX IF EXISTS <%=index%>;",
@@ -264,6 +265,17 @@
 
   /**
    * Set (overwrites) all! table constraints for an existing table.
+   *
+   * INDEX command:
+   * Allows to create an index for a table. Just add a constraint:
+   * <code>
+   *   ["INDEX", indexName, column(s)]
+   *   // column(s) are defined as
+   *   // - Array: [columnName0, ..., columnNameN-1] OR
+   *   // - String: "columnName" OR "columnName0, ..., columnNameN-1"
+   * </code>
+   * "PRIMARY KEY" or "UNIQUE" index(es) could be created as normal SQLite constraint.
+   *
    * @param tableName
    * @param tableConstraints
    */
@@ -274,7 +286,65 @@
 
     tableConstraints = tableConstraints || [];
 
+
+    // dom, 2013-01-06: special support for INDEX constraints
+    // SQLite doesn't has a INDEX table constraint to create a simple index within a table definition. $.db allows
+    // it with the INDEX command.
+    tableConstraints = tableConstraints.filter(function(element, index)
+    {
+
+      if (element.hasOwnProperty(0) && element[0].toUpperCase() === "INDEX")
+      {
+        if (element.length < 3) { throw new Error("unsupported INDEX table constraint declaration in " + tableName + ".tableContraints[" + index + "]; NEEDS 3 elements: ['INDEX', indexName, 'field[,fieldN]'|[fields]!"); }
+        $.db.addIndex(element[1], tableName, element[2]);
+
+        // remove element
+        return false;
+      }
+      else
+      {
+        // preserve element
+        return true;
+      }
+    });
+
+
     tables[tableName].constraints = tableConstraints;
+  };
+
+
+  /**
+   * Adds (or overwrites) an index.
+   * @param {String} indexName
+   * @param {String} tableName
+   * @param {Array|String} columns Array: [columnName0, ..., columnNameN-1]; String: "columnName" OR "columnName0, ..., columnNameN-1"
+   * @param {Boolean} [unique] default: false; create a unique index on true
+   */
+  $.db.addIndex = function(indexName, tableName, columns, unique)
+  {
+    if (typeof columns === "string")
+    {
+      // single column name
+      if (columns.indexOf(",") === -1)
+      {
+        columns = [columns];
+      }
+      // multiple columns
+      else
+      {
+        columns = columns.split(/\s*,\s*/).filter(function(el) { return !!el; });
+      }
+    }
+
+    $.db.checkColumns(tableName, columns);
+
+    // add index
+    indexes[indexName] =
+    {
+      table : tableName,
+      columns : columns,
+      unique : (!!unique) ? " UNIQUE" : ""
+    };
   };
 
 
@@ -365,6 +435,27 @@
     return ($.db.tableExists(tableName) && column && _getColumnIndex(tableName, column) > -1);
   };
 
+
+  /**
+   * Checks an array with column names for a defined table and throws Error on non-defined columns.
+   * @param {String} tableName
+   * @param {Array} columns
+   * @throws Error
+   */
+  $.db.checkColumns = function(tableName, columns)
+  {
+    if (!tableName) { throw new Error("missing tableName"); }
+    if (!$.db.tableExists(tableName)) { throw new Error("tableName '" + tableName + "' isn't added/defined."); }
+    if (!columns || !$.isArray(columns)) { throw new Error("columns is '" + (typeof columns) + "' instead of an array"); }
+
+    var lastCol=null;
+    if (!columns.every(function(col) { lastCol = col; return $.db.columnExists(tableName, col); }))
+    {
+      throw new Error("column '" + lastCol + "' doesn't exists in '" + tableName + "'");
+    }
+  };
+
+
   /**
    * Returns the database (if it isn't already opened, getDatabase will open the database).
    * @return {Database}
@@ -440,6 +531,24 @@
           }
 
           sql = $.template(SQL_CREATE_TRIGGER, {'trigger' : trigger,  'definition' : triggers[trigger] });
+          $.db.dbg(sql);
+          tx.executeSql(sql);
+        }
+      }
+
+      // Indexes
+      for (var index in indexes)
+      {
+        if (indexes.hasOwnProperty(index))
+        {
+          if (!!options.dropOnInit)
+          {
+            sql = $.template(SQL_DROP_INDEX, {'index' : index});
+            $.db.dbg(sql);
+            tx.executeSql(sql);
+          }
+
+          sql = $.template(SQL_CREATE_INDEX, {'name' : index, 'unique' : indexes[index].unique, 'table' : indexes[index].table, 'fields' : indexes[index].columns.join(", ") });
           $.db.dbg(sql);
           tx.executeSql(sql);
         }
