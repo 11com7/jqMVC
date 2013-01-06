@@ -28,7 +28,7 @@
       timestamp_create : 'dt_create',
       timestamp_change : 'dt_change',
       timestamp_type : 'INTEGER',
-      debug : false
+      debug : true
     },
 
     initialized = false,
@@ -483,7 +483,7 @@
 
     if (!$.db.isOpen())
     {
-      $(document).on("SQL:open", _initDb);
+      if (!options.autoInit) { $(document).on("SQL:open", _initDb) }
       $.db.open();
     }
     else
