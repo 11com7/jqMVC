@@ -12,9 +12,17 @@ var SqliteStorageAdapter = (function($)
     ;
 
 
+  //noinspection FunctionWithInconsistentReturnsJS
   var SqliteStorageAdapter = function(){
-
-    this.dbQuery = null;
+    // scope-safe constructor
+    if (this instanceof SqliteStorageAdapter)
+    {
+      this.dbQuery = null;
+    }
+    else
+    {
+      return new SqliteStorageAdapter();
+    }
   };
 
   SqliteStorageAdapter.prototype =
