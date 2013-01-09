@@ -5,19 +5,22 @@
  * @author dom <d.pesch@11com7.de>
  * @since 2012-09-30
  */
-var SqliteStorageAdapter = (function()
+var SqliteStorageAdapter = (function($)
 {
   var
     _protectedColumns = ['id', 'dt_create', 'dt_change']
     ;
 
 
-  var SqliteStorageAdapter = function(){ };
+  var SqliteStorageAdapter = function(){
 
-  $.extend(SqliteStorageAdapter,
+    this.dbQuery = null;
+  };
+
+  SqliteStorageAdapter.prototype =
   {
-    dbQuery:null,
-    
+    constructor : SqliteStorageAdapter,
+
     // ===================================================================================================================
     // save()
     // ===================================================================================================================
@@ -47,7 +50,7 @@ var SqliteStorageAdapter = (function()
      *  }</code></pre>
      * </p>
      *
-     * @param {jq.mvc.modelDb} obj
+     * @param {$.mvc.modelDb} obj
      * @param {function} [callback]
      * @requires $.db
      * @throws Error  
@@ -268,7 +271,7 @@ var SqliteStorageAdapter = (function()
      * <p>The callback function will only been called, if the element was "really" deleted in the database.</p>
      * <p>Non existing elements won't call the callback nor trigger the remove event!</p>
      *
-     * @param {jq.mvc.modelDb} obj empty model object
+     * @param {$.mvc.modelDb} obj empty model object
      * @param {function} [callback]
      * @event modelName:remove will only be fired if object was really deleted in the database
      */
@@ -370,7 +373,7 @@ var SqliteStorageAdapter = (function()
     
     
     // END of class
-  });
+  };
 
 
 
@@ -388,7 +391,7 @@ var SqliteStorageAdapter = (function()
 
 
   /**
-   * @param obj $.mvc.model object
+   * @param {$.mvc.modelDb} obj $.mvc.model object
    * @return String table name from obj.tableName || obj.modelName
    */
   function _getTableName(obj)
@@ -450,4 +453,4 @@ var SqliteStorageAdapter = (function()
   }
 
   return SqliteStorageAdapter;
-})();
+})(jq);
