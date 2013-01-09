@@ -130,7 +130,13 @@
    * @param {Object} [storageAdapter] - object implementing storageAdapter interface (look below for the default)
    */
   $.mvc.modelDb.extend = function(name, obj, storageAdapter) {
-    $.mvc.model.extend(name, obj, storageAdapter ? storageAdapter : SqliteStorageAdapter);
+    // creates
+    if (!(storageAdapter instanceof SqliteStorageAdapter))
+    {
+      storageAdapter = new storageAdapter();
+    }
+
+    $.mvc.model.extend(name, obj, storageAdapter ? storageAdapter : new SqliteStorageAdapter());
 
     return function(values) {
       var el = new $.mvc.modelDb(name, obj);
