@@ -66,7 +66,7 @@ var SqliteStorageAdapter = (function($)
     save : function(obj, callback)
     {
       var db,
-        tableName = _getTableName(obj),
+        tableName = obj.getTableName(),
         sql = "",
         values,
         columns,
@@ -166,7 +166,7 @@ var SqliteStorageAdapter = (function($)
     {
       var
         db,
-        tableName = _getTableName(obj),
+        tableName = obj.getTableName(),
         sql = "",
         columns
         ;
@@ -228,7 +228,7 @@ var SqliteStorageAdapter = (function($)
       //noinspection JSUnresolvedVariable
       var
         db,
-        tableName = _getTableName(obj),
+        tableName = obj.getTableName(),
         sql = "",
         columns,
         all = [],
@@ -286,7 +286,7 @@ var SqliteStorageAdapter = (function($)
     remove:function(obj, callback){
       var
         db,
-        tableName = _getTableName(obj),
+        tableName = obj.getTableName(),
         sql = ""
         ;
 
@@ -370,16 +370,16 @@ var SqliteStorageAdapter = (function($)
     _prepareDbQuery : function(obj)
     {
       if (!$.DbQuery) { throw new Error("$.DbQuery is missing! Please load class.db_query.js."); }
-      
+
       if (!this.dbQuery || !this.dbQuery instanceof $.DbQuery)
       {
-        this.dbQuery = new $.DbQuery(_getTableName(obj), {db: $.db});
+        this.dbQuery = new $.DbQuery(obj.getTableName(), {db: $.db});
       }
-      
+
       return this.dbQuery;
     }
-    
-    
+
+
     // END of class
   };
 
@@ -390,22 +390,11 @@ var SqliteStorageAdapter = (function($)
   // ===================================================================================================================
   function _checkTableName(nameOrObj)
   {
-    var tableName = ($.isObject(nameOrObj)) ? _getTableName(nameOrObj) : nameOrObj;
+    var tableName = ($.isObject(nameOrObj)) ? nameOrObj.getTableName() : nameOrObj;
     if (!$.db.tableExists(tableName))
     {
       throw new Error("table '" + tableName + "' not defined in $.db");
     }
-  }
-
-
-  /**
-   * @param {$.mvc.modelDb} obj $.mvc.model object
-   * @return String table name from obj.tableName || obj.modelName
-   */
-  function _getTableName(obj)
-  {
-    //noinspection JSUnresolvedVariable
-    return (obj.tableName) ? obj.tableName : obj.modelName;
   }
 
 

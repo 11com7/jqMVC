@@ -26,6 +26,7 @@
     this.__sleep = undefined;
 
     $.mvc.model.apply(this, arguments);
+    this.tableName = opts.tableName || this.modelName;
   };
 
   //noinspection JSCheckFunctionSignatures
@@ -143,6 +144,14 @@
       if (values && $.isObject(values)) { el.set(values); }
       return el;
     }
+  };
+
+
+  /**
+   * @return {String} table name from tableName (or modelName).
+   */
+  $.mvc.modelDb.prototype.getTableName = function() {
+    return (this.tableName) ? this.tableName : this.modelName;
   };
 
 })(jq, window);
