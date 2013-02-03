@@ -68,10 +68,11 @@ var SqliteStorageAdapter = (function($)
       var db,
         tableName = obj.getTableName(),
         sql = "",
-        values,
         columns,
+        values,
         id = Math.max(0, obj.id || 0),
-        isNew = (0 === id)
+        isNew = (0 === id),
+        self = this
         ;
 
       try
@@ -80,38 +81,13 @@ var SqliteStorageAdapter = (function($)
 
         _checkTableName(tableName);
         columns = _getWriteColumns(tableName);
-
-        // INSERT statement
-        if (isNew)
-        {
-          sql = "INSERT INTO " + tableName +
-            " (" + columns.join(", ") + ")" +
-            " VALUES (" + "?".repeat(columns.length, ", ") + ")"
-          ;
-        }
-        // UPDATE statement
-        else
-        {
-          sql = "UPDATE " + tableName + " SET " +
-                columns.join("=?, ") + "=?" +
-                " WHERE id=?"
-                ;
-        }
-
-        //noinspection JSUnresolvedFunction,JSUnresolvedVariable
-        values = $.values((obj.__sleep && $.isFunction(obj.__sleep)) ? obj.__sleep.call(obj) : obj, columns);
-        if (!isNew)  { values.push(id); }
+        sql = this._savePrepareSql(tableName, columns, isNew);
+        values = this._savePrepareValues(obj, columns, id);
 
         db.transaction(
           // QUERY
           function(tx) {
-            tx.executeSql(sql, values, function(tx, results)
-            {
-              if (isNew)
-              {
-                obj.id = results.insertId;
-              }
-            });
+            self._saveExecuteSql(tx, obj, sql, values, isNew);
           },
           // ERROR
           function(err) {
@@ -127,6 +103,76 @@ var SqliteStorageAdapter = (function($)
       {
         $.db.throwSqlError(err, sql || "-- unknown --");
       }
+    },
+
+    /**
+     * (internal) Creates the sql save statement.
+     * @param {String} tableName
+     * @param {Array} columns
+     * @param {Boolean} isNew
+     * @return {String}
+     * @protected
+     */
+    _savePrepareSql : function(tableName, columns, isNew)
+    {
+      var sql;
+
+      // INSERT statement
+      if (isNew)
+      {
+        sql = "INSERT INTO " + tableName +
+          " (" + columns.join(", ") + ")" +
+          " VALUES (" + "?".repeat(columns.length, ", ") + ")"
+        ;
+      }
+      // UPDATE statement
+      else
+      {
+        sql = "UPDATE " + tableName + " SET " +
+          columns.join("=?, ") + "=?" +
+          " WHERE id=?"
+        ;
+      }
+
+      return sql;
+    },
+
+    /**
+     * (internal) Get the values from obj. If defined and a function obj.__sleep() will be called.
+     * @param {$.mvc.modelDb} obj
+     * @param {Array} columns
+     * @param {Number} id
+     * @return {Array}
+     * @protected
+     */
+    _savePrepareValues : function(obj, columns, id)
+    {
+      //noinspection JSUnresolvedFunction,JSUnresolvedVariable
+      var values = $.values((obj.__sleep && $.isFunction(obj.__sleep)) ? obj.__sleep.call(obj) : obj, columns);
+      if (id != 0)  { values.push(id); }
+
+      return values;
+    },
+
+    /**
+     * (internal) Executes the sql query for an object. The object id will be set for new objects.
+     * @param {SQLTransaction} tx
+     * @param {$.mvc.modelDb} obj
+     * @param {String} sql
+     * @param {Array} values
+     * @param {Boolean} isNew
+     * @private
+     */
+    _saveExecuteSql : function(tx, obj, sql, values, isNew)
+    {
+      //noinspection JSValidateTypes
+      tx.executeSql(sql, values, function(tx, results)
+      {
+        if (isNew)
+        {
+          obj.id = results.insertId;
+        }
+      });
     },
 
 
