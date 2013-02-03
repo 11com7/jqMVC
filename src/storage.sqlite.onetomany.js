@@ -25,8 +25,12 @@ var SqliteOneToManyStorageAdapter = (function($)
     }
   };
 
-  SqliteOneToManyStorageAdapter.prototype = new SqliteStorageAdapter;
+  SqliteOneToManyStorageAdapter.prototype = new SqliteStorageAdapter();
+  SqliteOneToManyStorageAdapter.prototype.constructor = SqliteOneToManyStorageAdapter;
+
+
+  // TODO: overwrite methods
 
   
-  return SqliteStorageAdapter;
+  return SqliteOneToManyStorageAdapter;
 })(jq);
