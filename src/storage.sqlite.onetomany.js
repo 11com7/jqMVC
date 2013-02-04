@@ -18,6 +18,13 @@ var SqliteOneToManyStorageAdapter = (function($)
     if (this instanceof SqliteOneToManyStorageAdapter)
     {
       this.dbQuery = null;
+      this._t1Class = null;
+      this._t2Class = null;
+      this._tmTable = "";
+      this._tmT1Column = "";
+      this._tmT2Column = "";
+      this._saveT2No = -1;
+      this._tx = null;
     }
     else
     {
@@ -28,6 +35,11 @@ var SqliteOneToManyStorageAdapter = (function($)
   SqliteOneToManyStorageAdapter.prototype = new SqliteStorageAdapter();
   SqliteOneToManyStorageAdapter.prototype.constructor = SqliteOneToManyStorageAdapter;
 
+
+  SqliteOneToManyStorageAdapter.prototype.save = function(obj, callback)
+  {
+
+  };
 
   // TODO: overwrite methods
 
