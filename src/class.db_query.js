@@ -163,7 +163,7 @@
   };
 
 
-  //noinspection FunctionWithInconsistentReturnsJS
+  //noinspection FunctionWithInconsistentReturnsJS,JSUnusedGlobalSymbols
   $.DbQuery.prototype =
   {
     SQL_OPERATORS : flipToObject(['<', '>', '=', '>=', '<=', '<>', '!=',
@@ -183,18 +183,27 @@
     // ================================================================================================================
     /**
      * Builds and runs a sql query from search array and method parameter.
-     * @param {Array} search  filter array (empty array returns all entries)
-     * @param {Array|null} [columns] (array) with existing columns, or $.SqlClause-Objects |
-     *                                  (null) for all columns
-     * @param {Number|Array|null} [limit=0]
-     * @param {String} [logicOperator='AND']
-     * @param {String|Array} [orderBy='']
+     * @param {Object} search
+     * @param {Array} search.filter  filter array (empty array returns all entries)
+     * @param {Array|null} search.columns  (array) with existing columns, or $.SqlClause-Objects |
+     *                                    (null) for all columns
+     * @param {Number|Array|null} [search.limit=0]
+     * @param {String} [search.operator='AND']
+     * @param {String|Array} [search.order='']
      * @param {Function} successCallback
      * @param {Function} [errorCallback]
      */
-    search : function(search, columns, limit, logicOperator, orderBy, successCallback, errorCallback)
+    search : function(search, successCallback, errorCallback)
     {
-      this.prepareSearch(search, columns, limit, logicOperator, orderBy);
+      if (!$.isObject(search) || !search.filter) { throw new Error("Need search object:{filter, [columns], [limit], [operator], [order]}"); }
+
+      var
+        columns = search.columns || null,
+        limit = search.limit || 0,
+        operator = search.operator || undefined,
+        order = search.order || '';
+
+      this.prepareSearch(search.filter, columns, limit, operator, order);
       this.execute(successCallback, errorCallback);
     },
 

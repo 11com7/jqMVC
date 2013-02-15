@@ -377,7 +377,8 @@ var SqliteStorageAdapter = (function($)
 
       try
       {
-        query.search(search, "", 0, "", "", returnObjects, errorCallback);
+        if ($.isArray(search)) { search = { filter: search }; }
+        query.search(search, returnObjects, errorCallback);
       }
       catch(err)
       {
