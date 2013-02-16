@@ -197,31 +197,36 @@
     {
       if (!$.isObject(search) || !search.filter) { throw new Error("Need search object:{filter, [columns], [limit], [operator], [order]}"); }
 
+      //noinspection JSUnresolvedVariable
       var
         columns = search.columns || null,
         limit = search.limit || 0,
         operator = search.operator || undefined,
         order = search.order || '';
 
-      this.prepareSearch(search.filter, columns, limit, operator, order);
+      this.prepareSearch(search);
       this.execute(successCallback, errorCallback);
     },
 
 
     /**
      * Builds and returns a sql query from search array and method parameter.
-     * @param {Array} search  filter array (empty array returns all entries)
-     * @param {Array|null} [columns] (array) with existing columns, or $.SqlClause-Objects |
-     *                                  (null) for all columns
-     * @param {Number|Array|null} [limit=0]
-     * @param {String} [logicOperator='AND']
-     * @param {String|Array} [orderBy='']
+     * @param {Object} search
+     * @param {Array} search.filter  filter array (empty array returns all entries)
+     * @param {Array|null} search.columns  (array) with existing columns, or $.SqlClause-Objects |
+     *                                    (null) for all columns
+     * @param {Number|Array|null} [search.limit=0]
+     * @param {String} [search.operator='AND']
+     * @param {String|Array} [search.order='']
      * @return {String}
      */
-    prepareSearch :function(search, columns, limit, logicOperator, orderBy)
+    prepareSearch :function(search)
     {
+      if (!search || !search.columns) { search.columns = null; }
+
+
       var
-        returnColumns = this._searchPrepareReturnColumns(columns),
+        returnColumns = this._searchPrepareReturnColumns(search.columns),
         sqlWhere
         ;
 
@@ -234,16 +239,19 @@
                   " FROM " + this._table +
                   (sqlWhere ? " WHERE " + sqlWhere : "");
 
-      if (orderBy)
+      //noinspection JSUnresolvedVariable
+      if (search.orderBy)
       {
-        this._sql += this._buildSqlOrderBy(orderBy);
+        //noinspection JSUnresolvedVariable
+        this._sql += this._buildSqlOrderBy(search.orderBy);
       }
 
-      if (limit)
+      //noinspection JSUnresolvedVariable
+      if (search.limit)
       {
-        this._sql += this._buildSqlLimit(limit);
+        //noinspection JSUnresolvedVariable
+        this._sql += this._buildSqlLimit(search.limit);
       }
-
 
       return this._sql;
     },
@@ -254,26 +262,30 @@
     // ================================================================================================================
     /**
      *
-     * @param {Array} search  filter array (empty array returns all entries)
-     * @param {String} [logicOperator='AND']
+     * @param {Object} search  search object
+     * @param {Array} search.filter filter array (empty array returns all entries)
+     * @param {String} [search.operator='AND']
      * @param {Function} errorCallback
      * @param {Function} [successCallback]
      */
-    count : function(search, logicOperator, successCallback, errorCallback)
+    count : function(search, successCallback, errorCallback)
     {
-      this.prepareCount(search, logicOperator);
+      if (!$.isObject(search) || !search.filter) { throw new Error("Need search object:{filter, [operator]}"); }
+
+      this.prepareCount(search);
       this.executeOneValue(successCallback, errorCallback);
     },
 
     /**
      * Builds and returns a COUNT sql query.
-     * @param {Array} search  filter array (empty array returns all entries)
-     * @param {String} [logicOperator='AND']
+     * @param {Object} search  search object
+     * @param {Array} search.filter filter array (empty array returns all entries)
+     * @param {String} [search.operator='AND']
      * @return {String}
      */
-    prepareCount : function(search, logicOperator)
+    prepareCount : function(search)
     {
-      var sqlWhere = this._buildSqlFromFilterArray(search, logicOperator);
+      var sqlWhere = this._buildSqlFromFilterArray(search);
       this._sql = "SELECT COUNT(*) FROM " + this._table;
       this._sql += (sqlWhere) ? " WHERE " + sqlWhere : "";
 
@@ -286,32 +298,39 @@
     // ================================================================================================================
     /**
      * Deletes one or many rows from a table.
-     * @param {Array} search
-     * @param {Number|Array|null} [limit]
-     * @param {String} [logicOperator]
+     * @param {Object} search  search object
+     * @param {Array} search.filter filter array (empty array returns all entries)
+     * @param {Number|Array|null} [search.limit]
+     * @param {String} [search.operator='AND']
      * @param {Function} errorCallback
      * @param {Function} [successCallback]
      */
-    deleteSearch : function(search, limit, logicOperator, successCallback, errorCallback)
+    deleteSearch : function(search, successCallback, errorCallback)
     {
-      this.prepareDeleteSearch(search, limit, logicOperator);
+      this.prepareDeleteSearch(search);
       this.execute(successCallback, errorCallback);
     },
 
     /**
      * Builds and return a DELETE sql query.
-     * @param {Array} search
-     * @param {Number|Array|null} [limit]
-     * @param {String} [logicOperator]
+     * @param {Object} search  search object
+     * @param {Array} search.filter filter array (empty array returns all entries)
+     * @param {Number|Array|null} [search.limit]
+     * @param {String} [search.operator='AND']
      * @return {String}
      */
-    prepareDeleteSearch : function(search, limit, logicOperator)
+    prepareDeleteSearch : function(search)
     {
-      var sqlWhere = this._buildSqlFromFilterArray(search, logicOperator);
+      var sqlWhere = this._buildSqlFromFilterArray(search);
 
       this._sql = "DELETE FROM " + this._table;
       this._sql += (sqlWhere) ? " WHERE " + sqlWhere : "";
-      this._sql += this._buildSqlLimit(limit);
+
+      if (search.hasOwnProperty('limit'))
+      {
+        //noinspection JSUnresolvedVariable
+        this._sql += this._buildSqlLimit(search.limit);
+      }
 
       return this._sql;
     },
@@ -443,13 +462,16 @@
     /**
      * (internal) build an sql string from a column array with column names (string) or $.SqlClause objects.
      * For $.SqlClause objects the string representation will be used.
-     * @param {Array} columns
+     * @param {Array|Object} columns (numArray) columns OR
+     *                               (Object) search.columns
      * @return {String}
      * @private
      */
     _buildSqlColumns : function(columns)
     {
       var returnColumns = [];
+
+      if ($.isObject(columns) && columns.columns) { columns = columns.columns; }
 
       columns.map(function(column)
       {
@@ -462,26 +484,29 @@
 
     /**
      * (internal) creates a sql string from a filter array.
-     * @param {Array} search  search/filter array
-     * @param {String} [logicOperator] default operator between filter array elements, default value: AND
+     * @param {Object} search  search object
+     * @param {Array} search.filter  search/filter array
+     * @param {String} [search.operator] default operator between filter array elements, default value: AND
      * @private
      */
-    _buildSqlFromFilterArray : function (search, logicOperator)
+    _buildSqlFromFilterArray : function(search)
     {
       this._sqlValues = [];
 
-      if (!$.isArray(search)) { throw new Error("missing or wrong parameter search. got " + (typeof search) + " need Array"); }
-      if (!search.length) { return ""; } // empty search == empty WHERE
+      if (!$.isArray(search.filter)) { throw new Error("missing or wrong parameter search. got " + (typeof search) + " need Array"); }
+      if (!search.filter.length) { return ""; } // empty search == empty WHERE
+      var filter = search.filter;
 
-      logicOperator = (logicOperator && logicOperator.length) ? logicOperator.toUpperCase() : "AND";
-      if (!this.SQL_OPERATORS_LOGIC[logicOperator])
+      //noinspection JSUnresolvedVariable
+      var operator = (search.operator && search.operator.length) ? search.operator.toUpperCase() : "AND";
+      if (!this.SQL_OPERATORS_LOGIC[operator])
       {
-        throw new Error("unknown logicOperator '" + logicOperator + " (" + (typeof logicOperator) + "). accepts only: " + this.SQL_OPERATORS_LOGIC.join(', '));
+        throw new Error("unknown search.operator '" + operator + " (" + (typeof operator) + "). accepts only: " + this.SQL_OPERATORS_LOGIC.join(', '));
       }
 
-      if (!$.isArray(search[0]))
+      if (!$.isArray(filter[0]))
       {
-        search = [search];
+        filter = [filter];
       }
 
       var
@@ -493,14 +518,14 @@
       // - string clause: ['column', 'operator', 'value' | {SqlClause}, ['logicOperator']]
       // - brackets:      ['(' | ')', ['logicOperator']] | '(' | ')'
       // - SqlClause:     [{SqlClause}, ['logicOperator']] | {SqlClause}
-      for (var t=0; t < search.length; t++)
+      for (var t=0; t < filter.length; t++)
       {
         var
-          entry = search[t],
+          entry = filter[t],
           entryType = typeof entry;
 
 
-        if (!entry) { throw new Error("missing search[" + t + "] (" + (typeof entry) + ")"); }
+        if (!entry) { throw new Error("missing search.filter[" + t + "] (" + (typeof entry) + ")"); }
 
 
         if (!$.isArray(entry))
@@ -511,14 +536,14 @@
           }
           else
           {
-            throw new Error("search[" + t + "] (" + (typeof entry) + ") isn't an array");
+            throw new Error("search.filter[" + t + "] (" + (typeof entry) + ") isn't an array");
           }
         }
         else
         {
           if (!entry[0])
           {
-            throw new Error("search[" + t + "][0] fieldname (or bracket or SqlClause) doesn't exists");
+            throw new Error("search.filter[" + t + "][0] fieldname (or bracket or SqlClause) doesn't exists");
           }
         }
 
@@ -528,7 +553,7 @@
         {
           if (entry[0] === "(" && !openBracket)
           {
-            sql += " " + this._getLogicOperator(entry[1], logicOperator);
+            sql += " " + this._getLogicOperator(entry[1], operator);
           }
           else if (entry[0] === ")")
           {
@@ -566,10 +591,10 @@
             entry[2] = this._prepareSearchValue(entry, 1, 2, t);
           }
 
-          entry[3] = this._getLogicOperator(entry[3], logicOperator);
+          entry[3] = this._getLogicOperator(entry[3], operator);
           if (!this.SQL_OPERATORS_LOGIC.hasOwnProperty(entry[3]))
           {
-            throw new Error("search[" + t + "][3] unsupported logic operator '" + entry[3] + "'. has to be '" + this.SQL_OPERATORS_LOGIC.join("', '") + "'");
+            throw new Error("search.filter[" + t + "][3] unsupported logic operator '" + entry[3] + "'. has to be '" + this.SQL_OPERATORS_LOGIC.join("', '") + "'");
           }
         }
 
@@ -595,7 +620,7 @@
         }
         else
         {
-          throw new Error("search[" + t + "][0] unsupported field type (" + (typeof entry[0]) + ")");
+          throw new Error("search.filter[" + t + "][0] unsupported field type (" + (typeof entry[0]) + ")");
         }
       }
 
@@ -885,6 +910,7 @@
 
   };
 
+  //noinspection SpellCheckingInspection
   /**
    * Return TRUE if test is a numeric value.
    * @author Christian C. Salvadó
