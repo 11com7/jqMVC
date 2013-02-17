@@ -17,6 +17,7 @@ var SqliteOneToManyStorageAdapter = (function($)
     // scope-safe constructor
     if (this instanceof SqliteOneToManyStorageAdapter)
     {
+      this.db = null;
       this.dbQuery = null;
       this._t1Class = null;
       this._t2Class = null;
@@ -36,10 +37,28 @@ var SqliteOneToManyStorageAdapter = (function($)
   SqliteOneToManyStorageAdapter.prototype.constructor = SqliteOneToManyStorageAdapter;
 
 
+  // ===================================================================================================================
+  // save()
+  // ===================================================================================================================
+  /**
+  * @param {$.mvc.modelDb} obj
+  * @param {function} [callback]
+  * @requires $.db
+  * @throws Error
+  */
   SqliteOneToManyStorageAdapter.prototype.save = function(obj, callback)
+  {
+    this.db = $.db.open();
+    this._tx = null;
+  };
+
+  SqliteOneToManyStorageAdapter.prototype._saveStart = function(obj, callback)
   {
 
   };
+
+
+
 
   // TODO: overwrite methods
 
