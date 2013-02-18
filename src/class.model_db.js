@@ -4,19 +4,28 @@
  * Copyright 2012 11com7, Bonn, Germany
  * @author Dominik Pesch <d.pesch@11com7.de>
  * @since 2012-11-27
+ * @memberOf jq.mvc
  */
-(function($, window, undefined)
+(
+/**
+ * @param {jq} $
+ * @param {window} window
+ * @param {undefined=} undefined
+ */
+  function($, window, undefined)
 {
+
   "use strict";
 
   /**
    * Internal extended model base class.
-   * @param {String} name of new model
-   * @param {Object} opts default methods/properties
+   * @class
    * @property {Number} id for object in the database (0 = new element)
    * @property {String|undefined} tableName can be set, to use an alternative table name instead of modelName
    * @property {function|undefined} __wakeup (optional) can be set, as "magic" callback used by StorageAdapter.get(), StorageAdapter.getAll() to manipulate data after loading
    * @property {function|undefined} __sleep (optional) can be set, as "magic" callback used by StorageAdapter.save() to manipulate data before saving
+   * @param {String} name of new model
+   * @param {Object} opts default methods/properties
    */
   $.mvc.modelDb = function(name, opts)
   {
@@ -153,5 +162,9 @@
   $.mvc.modelDb.prototype.getTableName = function() {
     return (this.tableName) ? this.tableName : this.modelName;
   };
+
+  $.mvc.modelDb.prototype.isNew = function() {
+    return this.id === 0;
+  }
 
 })(jq, window);

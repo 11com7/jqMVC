@@ -5,7 +5,12 @@
  * @author dom <d.pesch@11com7.de>
  * @since 2012-09-30
  */
-var SqliteOneToManyStorageAdapter = (function($)
+var SqliteOneToManyStorageAdapter = (
+/**
+* @param {jq} $
+* @return {Function}
+*/
+function($)
 {
   var
     _protectedColumns = ['id', 'dt_create', 'dt_change']
@@ -19,13 +24,12 @@ var SqliteOneToManyStorageAdapter = (function($)
     {
       this.db = null;
       this.dbQuery = null;
-      this._t1Class = null;
-      this._t2Class = null;
-      this._tmTable = "";
-      this._tmT1Column = "";
-      this._tmT2Column = "";
+      this._tParentClass = null;
+      this._tChildClass = null;
       this._saveT2No = -1;
       this._tx = null;
+      this._cbReady = null;
+      this._cbNext = null;
     }
     else
     {
@@ -48,6 +52,11 @@ var SqliteOneToManyStorageAdapter = (function($)
   */
   SqliteOneToManyStorageAdapter.prototype.save = function(obj, callback)
   {
+    console.log("SqliteOneToManyStorageAdapter->save(", obj, ')');
+    if ($.isFunction(callback)) { callback(obj); }
+    return;
+
+
     this.db = $.db.open();
     this._tx = null;
   };
