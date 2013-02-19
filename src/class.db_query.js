@@ -352,7 +352,7 @@
       this._database.transaction(
         function(tx)
         {
-          tx.executeSql(self.getSql(), self.getValues(), successCallback, errorCallback);
+          self.executeInTransaction(tx, successCallback, errorCallback);
         }
       );
     },
@@ -370,7 +370,7 @@
       this._database.transaction(
         function(tx)
         {
-          tx.executeSql(self.getSql(), self.getValues(),
+          self.executeInTransaction(tx,
             function(tx, results)
             {
               var value = null;
@@ -395,9 +395,14 @@
      */
     executeInTransaction : function(tx, successCallback, errorCallback)
     {
-      if (!tx || !tx instanceof SQLTransaction)
+      if (!tx || !tx.executeSql)
       {
         throw new Error("undefined or incompatible transaction tx (" + (typeof tx) + ")");
+      }
+
+      if ($.db.getOptions('debug') && console && console.log)
+      {
+        console.log("DbQuery->executeInTransaction", this.getSql(), this.getValues());
       }
 
       //noinspection JSValidateTypes
