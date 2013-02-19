@@ -833,7 +833,7 @@
     {
       if (!entry.hasOwnProperty(""+valueIndex) || entry[valueIndex] == undefined)
       {
-        throw new Error("missing or empty value in search[" + searchIndex + "][" + valueIndex + "]");
+        throw new Error("missing or empty value in search[" + searchIndex + "][" + valueIndex + "]; entry: ['" + entry.join("','") +  "']");
       }
 
       var value = entry[valueIndex], operator = entry[opIndex];
