@@ -239,11 +239,9 @@
                   " FROM " + this._table +
                   (sqlWhere ? " WHERE " + sqlWhere : "");
 
-      //noinspection JSUnresolvedVariable
-      if (search.orderBy)
+      if (search.order)
       {
-        //noinspection JSUnresolvedVariable
-        this._sql += this._buildSqlOrderBy(search.orderBy);
+        this._sql += this._buildSqlOrderBy(search.order);
       }
 
       //noinspection JSUnresolvedVariable
