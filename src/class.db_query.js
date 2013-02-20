@@ -700,7 +700,7 @@
         sqlOrderBy[0] = orderBy;
       }
 
-      return (sqlOrderBy.length) ? "ORDER BY " + sqlOrderBy.join(", ") : "";
+      return (sqlOrderBy.length) ? " ORDER BY " + sqlOrderBy.join(", ") : "";
     },
 
 
