@@ -7,9 +7,10 @@
  */
 var SqliteOneToManyStorageAdapter = (
 /**
-* @param {jq} $
-* @return {Function}
-*/
+ * @param {jq} $
+ * @return {Function}
+ * @lends SqliteOneToManyStorageAdapter.prototype
+ */
 function($)
 {
   var
@@ -18,6 +19,10 @@ function($)
 
 
   //noinspection FunctionWithInconsistentReturnsJS
+  /**
+   * @return {*}
+   * @constructs
+   */
   var SqliteOneToManyStorageAdapter = function(){
     // scope-safe constructor
     if (this instanceof SqliteOneToManyStorageAdapter)
