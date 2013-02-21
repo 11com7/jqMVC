@@ -39,7 +39,7 @@
     views = {},
 
     // templates
-    SQL_DT_DEFAULT = "DATETIME('NOW', 'LOCALTIME')",
+    SQL_DT_DEFAULT = "STRFTIME('%s', 'NOW', 'LOCALTIME')",
     SQL_DT_CONSTRAINTS = "NOT NULL DEFAULT (" + SQL_DT_DEFAULT + ")",
     SQL_CREATE_TABLE = "CREATE TABLE IF NOT EXISTS <%=table%> (<%=fields%><%=constraints%>);",
     SQL_CREATE_INDEX = "CREATE<%=unique%> INDEX IF NOT EXISTS <%=name%> ON <%=table%> (<%=fields%>);",
