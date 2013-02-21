@@ -27,6 +27,8 @@
 
   $.SqlClause.prototype =
   {
+    constructor : $.SqlClause,
+
     /**
      * Returns the sql clause as string.
      * @return {String} sql clause
@@ -166,6 +168,8 @@
   //noinspection FunctionWithInconsistentReturnsJS,JSUnusedGlobalSymbols
   $.DbQuery.prototype =
   {
+    constructor : $.DbQuery,
+
     SQL_OPERATORS : flipToObject(['<', '>', '=', '>=', '<=', '<>', '!=',
                     'BETWEEN', 'IN', 'NOT IN', 'LIKE', 'NOT LIKE',
                     'REGEXP', 'RLIKE', 'NOT REGEXP',
