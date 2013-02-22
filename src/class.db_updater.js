@@ -1,29 +1,29 @@
 //noinspection JSCheckFunctionSignatures
 /**
- * @fileOverview dbUpdate - A version updater for sqlite shemata.
+ * @fileOverview dbUpdate - A version updater for sqlite schemata.
  * Copyright 2013 11com7, Bonn, Germany
  *
  * @author Dominik Pesch <d.pesch@11com7.de>
  * @since 2013-02-21
  * @requires jq
  * @requires $.db#
+ * @namespace jq
  */
 
-(
-/**
- * @param {jq} jq
- * @param {Window} window
- * @param {undefined} [undefined]
+
+
+(function(jq, window, undefined)
+/** @lends jq.DbUpdater.prototype
+ * @property {$.db} _db
+ * @property {Object} _options
  */
-function(jq, window, undefined)
 {
   "use strict";
 
   if (!jq.db || typeof jq.db !== "object")
   {
-   throw new Error("$.db NOT defined. This plugin needs the 11com7-sqlite library. PLease load it first.");
+    throw new Error("$.db NOT defined. This plugin needs the 11com7-sqlite library. PLease load it first.");
   }
-
 
   // ====================================================================================================
   // constructor
@@ -31,16 +31,16 @@ function(jq, window, undefined)
   //noinspection FunctionWithInconsistentReturnsJS
   /**
    * Sqlite Database Version Updater.
-   * @class DbUpdater
-   * @memberOf jq
-   * @param {Database} [database]
+   * @constructs
+   * @param {$.db} [db]
    * @param {Object} options
    */
-  jq.DbUpdater = function(database, options)
+  jq.DbUpdater = function(db, options)
   {
     if (this instanceof jq.DbUpdater)
     {
-      this._database = database || jq.db.getDatabase();
+      this._db = db || jq.db;
+      this._database = jq.db.getDatabase();
       this._options = jq.extend({}, jq.DbUpdater.prototype.defaultOptions, options);
 
       this._updates = [];
@@ -48,7 +48,7 @@ function(jq, window, undefined)
     }
     else
     {
-      return new jq.DbUpdater(database);
+      return new jq.DbUpdater(db, options);
     }
   };
 
@@ -91,17 +91,46 @@ function(jq, window, undefined)
     // --------------------------------------------------------------------------------
     addUpdate : function(newVersion, updateFunc)
     {
-      newVersion = newVersion || this._updates;
+      newVersion = newVersion || this._updates.length;
+
+
+
+
+    },
+
+
+    // --------------------------------------------------------------------------------
+    // getVersion
+    // --------------------------------------------------------------------------------
+    getVersion : function(callback, tx)
+    {
+
+    },
+
+    // --------------------------------------------------------------------------------
+    // _initUpdateSchema
+    // --------------------------------------------------------------------------------
+    _initUpdateSchema : function(callback, tx)
+    {
+      if (!tx)
+      {
+      }
     },
 
     // --------------------------------------------------------------------------------
     //  DefaultOptions
     // --------------------------------------------------------------------------------
+    /**
+     * @type Object
+     */
     defaultOptions : {
       versionTable : "_dbVersion",
-      readyFunc : undefined
+      readyFunc : undefined,
+      errorFunc : undefined
     }
   };
+
+
 
 
 })(jq, window);
