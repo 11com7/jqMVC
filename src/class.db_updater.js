@@ -1,136 +1,114 @@
-//noinspection JSCheckFunctionSignatures
 /**
- * @fileOverview dbUpdate - A version updater for sqlite schemata.
- * Copyright 2013 11com7, Bonn, Germany
- *
- * @author Dominik Pesch <d.pesch@11com7.de>
- * @since 2013-02-21
- * @requires jq
- * @requires $.db#
+ * @fileOverview jq.DbUpdater class
  * @namespace jq
+ * @class jq.DbUpdater
  */
-
-
-
-(function(jq, window, undefined)
-/** @lends jq.DbUpdater.prototype
- * @property {$.db} _db
- * @property {Object} _options
- */
+jq.DbUpdater = (function($)
 {
   "use strict";
 
-  if (!jq.db || typeof jq.db !== "object")
+  /**
+   * @constructs
+   * @name jq.DbUpdater
+   * @param {$.db} db
+   * @param {Object} [options]
+   */
+  function DbUpdater(db, options)
   {
-    throw new Error("$.db NOT defined. This plugin needs the 11com7-sqlite library. PLease load it first.");
+    if (!this instanceof DbUpdater) { return new DbUpdater(db, options); }
+
+
+    this._db = db || $.db;
+    this._database = null;
+
+    this.options = $.extend({}, this.defaultOptions, options);
+
+
   }
 
-  // ====================================================================================================
-  // constructor
-  // ====================================================================================================
-  //noinspection FunctionWithInconsistentReturnsJS
+
+
   /**
-   * Sqlite Database Version Updater.
-   * @constructs
-   * @param {$.db} [db]
-   * @param {Object} options
+   * @this {DbUpdater}
    */
-  jq.DbUpdater = function(db, options)
+  DbUpdater.prototype =
   {
-    if (this instanceof jq.DbUpdater)
+    /**
+     * @ignore
+     */
+    constructor : DbUpdater,
+
+    /**
+     * @param {function(SQLTransaction)} func
+     * @return {DbUpdater}
+     */
+    addInitFunction : function(func)
     {
-      this._db = db || jq.db;
-      this._database = jq.db.getDatabase();
-      this._options = jq.extend({}, jq.DbUpdater.prototype.defaultOptions, options);
 
-      this._updates = [];
-      this._status = jq.DbUpdater.STATUS_INIT;
-    }
-    else
+      return this;
+    },
+
+    /**
+     * @param {Number} version  has to be a continuous increasing integer (1, 2, 3, 4, …) version number
+     * @param {function(SQLTransaction)} func
+     * @return {DbUpdater}
+     */
+    addUpdateFunction : function(version, func)
     {
-      return new jq.DbUpdater(db, options);
-    }
-  };
 
+      return this;
+    },
 
-  // ====================================================================================================
-  // constants
-  // ====================================================================================================
-  /**
-   * status: initialization addUpdate() and execute() allowed.
-   * @constant
-   * @type Number
-   */
-  jq.DbUpdater.__defineGetter__( "STATUS_INIT", function() { return 0; } );
-
-  /**
-   * status: updates in progress.
-   * @constant
-   * @type Number
-   */
-  jq.DbUpdater.__defineGetter__( "STATUS_EXECUTE", function() { return 1; } );
-
-  /**
-   * status: updates are ready.
-   * @constant
-   * @type Number
-   */
-  jq.DbUpdater.__defineGetter__( "STATUS_READY", function() { return 2; } );
-
-
-  // ====================================================================================================
-  // prototype methods
-  // ====================================================================================================
-  jq.DbUpdater.prototype =
-  {
-    constructor : jq.DbUpdater,
-
-
-    // --------------------------------------------------------------------------------
-    // addUpdate
-    // --------------------------------------------------------------------------------
-    addUpdate : function(newVersion, updateFunc)
+    /**
+     * @this {DbUpdater}
+     * @param {function()} func
+     * @return {DbUpdater}
+     */
+    addReadyFunction : function(func)
     {
-      newVersion = newVersion || this._updates.length;
 
 
+      return this;
+    },
 
-
+    /**
+     * @return {DbUpdater}
+     */
+    execute : function()
+    {
+      return this;
     },
 
 
-    // --------------------------------------------------------------------------------
-    // getVersion
-    // --------------------------------------------------------------------------------
-    getVersion : function(callback, tx)
+
+
+
+
+
+    /**
+     * @this {DbUpdater}
+     * @private
+     */
+    _openDatabase : function()
     {
+      this._database = this._db.getDatabase();
 
     },
-
     // --------------------------------------------------------------------------------
-    // _initUpdateSchema
-    // --------------------------------------------------------------------------------
-    _initUpdateSchema : function(callback, tx)
-    {
-      if (!tx)
-      {
-      }
-    },
-
-    // --------------------------------------------------------------------------------
-    //  DefaultOptions
+    // DefaultOptions
     // --------------------------------------------------------------------------------
     /**
-     * @type Object
+     * @namespace jq.DbUpdater.defaultOptions
+     * @property {String} versionTable
+     * @property {function(String)} errorFunc will be called on errors with error:String
      */
-    defaultOptions : {
+    defaultOptions :
+    {
       versionTable : "_dbVersion",
-      readyFunc : undefined,
       errorFunc : undefined
     }
   };
 
 
-
-
-})(jq, window);
+  return DbUpdater;
+})(jq);
