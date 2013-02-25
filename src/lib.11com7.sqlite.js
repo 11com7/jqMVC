@@ -483,7 +483,11 @@
 
     if (!$.db.isOpen())
     {
-      if (!options.autoInit) { $(document).on("SQL:open", _initDb) }
+      if (!options.autoInit)
+      { //noinspection JSCheckFunctionSignatures
+        $(document).on("SQL:open", _initDb)
+      }
+
       $.db.open();
     }
     else
@@ -507,16 +511,7 @@
       sql = "::tables";
       for (var t = 0; t < tables.length; t++)
       {
-        if (!!options.dropOnInit)
-        {
-          sql = $.template(SQL_DROP_TABLE, {'table' : tables[t]});
-          $.db.dbg(sql);
-          tx.executeSql(sql);
-        }
-
-        sql = $.template(SQL_CREATE_TABLE, {'table' : tables[t], 'fields' : _getSqlTableColumns(tables[t]), 'constraints' : _getSqlTableConstraints(tables[t]) });
-        $.db.dbg(sql);
-        tx.executeSql(sql);
+        $.db.createTable(tx, tables[t]);
       }
 
       // Triggers
@@ -525,16 +520,7 @@
       {
         if (triggers.hasOwnProperty(trigger))
         {
-          if (!!options.dropOnInit)
-          {
-            sql = $.template(SQL_DROP_TRIGGER, {'trigger' : trigger});
-            $.db.dbg(sql);
-            tx.executeSql(sql);
-          }
-
-          sql = $.template(SQL_CREATE_TRIGGER, {'trigger' : trigger,  'definition' : triggers[trigger] });
-          $.db.dbg(sql);
-          tx.executeSql(sql);
+          $.db.createTrigger(tx, trigger);
         }
       }
 
@@ -544,16 +530,7 @@
       {
         if (indexes.hasOwnProperty(index))
         {
-          if (!!options.dropOnInit)
-          {
-            sql = $.template(SQL_DROP_INDEX, {'index' : index});
-            $.db.dbg(sql);
-            tx.executeSql(sql);
-          }
-
-          sql = $.template(SQL_CREATE_INDEX, {'name' : index, 'unique' : indexes[index].unique, 'table' : indexes[index].table, 'fields' : indexes[index].columns.join(", ") });
-          $.db.dbg(sql);
-          tx.executeSql(sql);
+          $.db.createIndex(tx, index);
         }
       }
 
@@ -569,6 +546,71 @@
       initialized = true;
     });
   }
+
+
+  /**
+   * Creates a table entity in the database.
+   * @param {SQLTransaction} tx transaction object
+   * @param {String} name table name
+   */
+  $.db.createTable = function(tx, name)
+  {
+    var sql;
+
+    if (!!options.dropOnInit)
+    {
+      sql = $.template(SQL_DROP_TABLE, {'table' : name});
+      $.db.dbg(sql);
+      tx.executeSql(sql);
+    }
+
+    sql = $.template(SQL_CREATE_TABLE, {'table' : name, 'fields' : _getSqlTableColumns(name), 'constraints' : _getSqlTableConstraints(name) });
+    $.db.dbg(sql);
+    tx.executeSql(sql);
+  };
+
+  /**
+   * Creates a named trigger in the database.
+   * @param {SQLTransaction} tx transaction object
+   * @param {String} trigger trigger name
+   */
+  $.db.createTrigger = function(tx, trigger)
+  {
+    var sql;
+
+    if (!!options.dropOnInit)
+    {
+      sql = $.template(SQL_DROP_TRIGGER, {'trigger' : trigger});
+      $.db.dbg(sql);
+      tx.executeSql(sql);
+    }
+
+    sql = $.template(SQL_CREATE_TRIGGER, {'trigger' : trigger,  'definition' : triggers[trigger] });
+    $.db.dbg(sql);
+    tx.executeSql(sql);
+  };
+
+  /**
+   * Creates a named index in the database.
+   * @param {SQLTransaction} tx transaction object
+   * @param {String} index index name
+   */
+  $.db.createIndex = function(tx, index)
+  {
+    var sql;
+
+    if (!!options.dropOnInit)
+    {
+      sql = $.template(SQL_DROP_INDEX, {'index' : index});
+      $.db.dbg(sql);
+      tx.executeSql(sql);
+    }
+
+    sql = $.template(SQL_CREATE_INDEX, {'name' : index, 'unique' : indexes[index].unique, 'table' : indexes[index].table, 'fields' : indexes[index].columns.join(", ") });
+    $.db.dbg(sql);
+    tx.executeSql(sql);
+  };
+
 
 
   /**

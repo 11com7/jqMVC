@@ -3,9 +3,10 @@
  * @namespace jq
  * @class jq.DbUpdater
  */
-jq.DbUpdater = (function($)
+jq.DbUpdater = (function(/** jq */ $)
 {
   "use strict";
+
 
   /**
    * status: allows to add init-, update- and ready-functions.
@@ -126,7 +127,7 @@ jq.DbUpdater = (function($)
     /**
      * update functions: will be called sequentially on updates (= database already in use).
      * the version number will be updated after every update function
-     * Array.<{{version:number, function(SQLTransaction}}>
+     * Array.<{{version:number, function(SQLTransaction, version:Number)}}>
      * @type {Array}
      */
     this._updateFuncs = [];
@@ -144,6 +145,7 @@ jq.DbUpdater = (function($)
      * @type {Array}
      */
     this._runFuncs = [];
+
 
 
     /**
@@ -218,7 +220,7 @@ jq.DbUpdater = (function($)
      */
     addReadyFunction : function(func)
     {
-      if (this._status > STATUS_INIT) { throw new Error("DbUpdater error: already in execution or executed. Please use addReadyFunction() before execute()."); }
+      if (this._status > STATUS_INIT) { throw new Error("DbUpdater error: exceute() has already called. Please use addReadyFunction() before execute()."); }
 
       if (!!func && $.isFunction(func))
       {
@@ -233,13 +235,17 @@ jq.DbUpdater = (function($)
      */
     execute : function()
     {
+      if (this._status > STATUS_INIT) { throw new Error("DbUpdater error: exceute() has already called."); }
+
       // nothing to do
       if (this._initFuncs.length == 0 && this._updateFuncs.length == 0 && this._readyFunc.length == 0)
       {
         return this;
       }
 
-
+      /**
+       * @type {DbUpdater#}
+       */
       var self = this;
 
       // get version number -> no version table ==> init ELSE update
@@ -256,13 +262,20 @@ jq.DbUpdater = (function($)
              */
             function(tx, results)
             {
-              var version = results.rows.item(0).version;
-              self.dbg("found version number", version, "=> type UPDATE");
-              self._type = TYPE_UPDATE;
-              self._startWith(version);
+              if (results.rows.length > 0)
+              {
+                self._prepareUpdateExecution.call(self, tx, results.rows.item(0).version);
+              }
+              // error corrupt version table => try init
+              else
+              {
+                self.dbg("CORRUPT VERSION TABLE --> TRY RE-INIT");
+                sql = "DROP TABLE " + self._options.versionTable;
+                tx.executeSql(sql, self._prepareInitExecution.call(self, tx));
+              }
             },
             /**
-             * ERROR
+             * INIT OR ERROR
              * @param {SQLTransaction} tx
              * @param {SQLError} error
              */
@@ -271,9 +284,7 @@ jq.DbUpdater = (function($)
               // ==> INIT
               if (error.message.toLowerCase().indexOf("no such table") > -1)
               {
-                self.dbg("no version table '" + self._options.versionTable + "' found => type INIT");
-                self._type = TYPE_INIT;
-                self._startWith(0);
+                self._prepareInitExecution.call(self, tx);
               }
               // ERROR
               else
@@ -286,13 +297,139 @@ jq.DbUpdater = (function($)
         }
       );
 
-
-
-
       return this;
     },
 
 
+    _prepareInitExecution : function(tx)
+    {
+      var self = this;
+
+      this.dbg("no version table '" + self._options.versionTable + "' found => type INIT");
+      this._type = TYPE_INIT;
+
+      $.db.addTable(this._options.versionTable,
+        ["version", "INTEGER", "NOT NULL"]
+      );
+
+      this._prepareExecution.call(this, 0, this._initFuncs);
+      this._startExecution(function(tx)
+      {
+        self._updateVersion(tx, self._getUpdateFuncVersionMax.call(self));
+        console.log(arguments, "INIT FERTIG");
+      });
+    },
+
+
+    _prepareUpdateExecution : function(tx, version)
+    {
+      var self = this;
+      this.dbg("found version number", version, "=> type UPDATE");
+      this._type = TYPE_UPDATE;
+      this._prepareExecution.call(this, version, this._updateFuncs);
+      this._startExecution(function() { console.log(arguments, "UPDATE FERTIG"); });
+    },
+
+
+    /**
+     * adds functions to call stack (_runFuncs); if version > 0 then only functions with versions > version are added.
+     * if version > 0 the functions array has to be Array.<{{version:number, function(SQLTransaction}}>.
+     * @param {Number} version
+     * @param {Array} functions
+     */
+    _prepareExecution : function(version, functions)
+    {
+      var stack = this._runFuncs = [];
+      for (var t = 0; t < functions.length; t++)
+      {
+        if (version <= 0)
+        {
+          stack.push([0, functions[t]]);
+        }
+        else if (version > functions[t][0])
+        {
+          stack.push(functions[t]);
+        }
+      }
+    },
+
+    _startExecution : function(readyCallback)
+    {
+      var self = this;
+
+      this._openDatabase();
+      this._database.transaction(
+        function(tx)
+        {
+          self._tx = tx;
+          self._nextExecution();
+        },
+        // SUCCESS
+        function(tx, results)
+        {
+          self._tx = null;
+          readyCallback.call(self, results);
+        },
+        // ERROR
+        function(tx, error)
+        {
+          if ($.isFunction(self._options.errorFunc))
+          {
+            self._options.errorFunc.call(null, error);
+          }
+          else
+          {
+            var msg = (!!error && error.message) ? error.message : '';
+            var errNo = (!!error && error.code) ? error.code : -42;
+
+            self.dbg("SQL-ERROR " + errNo + " --- ROLL BACK!");
+            throw new Error("DbUpdater SQL-Error + (" + errNo + "): '" + msg + "'");
+          }
+        }
+      );
+    },
+
+    _nextExecution : function()
+    {
+      // next one
+      if (this._runFuncs.length)
+      {
+        var version, func = this._runFuncs.shift();
+        version = func[0];
+        func = func[1];
+
+        this.dbg("execute version: #" + version);
+
+        func.call(null, this._tx, version);
+
+        if (version > 0)
+        {
+          this._updateVersion(this._tx, version);
+        }
+
+        this._nextExecution();
+      }
+      // ready
+      else
+      {
+        // done
+      }
+    },
+
+
+
+    _updateVersion : function(tx, version)
+    {
+      this.dbg("update version column to #" + version);
+      var sql = this._getUpdateVersionSql();
+      //noinspection JSValidateTypes
+      tx.executeSql(sql, [version]);
+    },
+
+    _getUpdateVersionSql : function()
+    {
+      return "UPDATE " + this._options.versionTable + " SET version = ?";
+    },
 
 
 
@@ -306,10 +443,6 @@ jq.DbUpdater = (function($)
     {
       var debugMsgs = Array.prototype.slice.call(arguments);
       debugMsgs.unshift("DbUpdater: ");
-      console.log(this);
-      console.log(this._options);
-      console.log(this._options.debugFunc);
-      console.dir(debugMsgs);
       this._options.debugFunc.apply(null, debugMsgs);
     },
 
@@ -318,7 +451,6 @@ jq.DbUpdater = (function($)
     // --------------------------------------------------------------------------------
     /**
      * assigns (opens) the html database if not assigned.
-     * @private
      */
     _openDatabase : function()
     {
@@ -330,7 +462,6 @@ jq.DbUpdater = (function($)
     /**
      * returns the largest version number in this._updateFuncs.
      * @return {Number}
-     * @private
      */
     _getUpdateFuncVersionMax : function()
     {
