@@ -476,8 +476,9 @@
   // ===================================================================================================================
   /**
    * Initialize database – has to be called after configuration.
+   * @param {SQLTransaction} [tx] used only for opened databases
    */
-  $.db.initDb = function()
+  $.db.initDb = function(tx)
   {
     if (initialized)  { return; }
 
@@ -492,11 +493,11 @@
     }
     else
     {
-      _initDb();
+      _initDb(tx);
     }
   };
 
-  function _initDb()
+  function _initDb(tx)
   {
     if (!$.db.isOpen()) { throw new Error("database not opened"); }
 
@@ -504,8 +505,25 @@
       tables = $.db.getTables();
 
 
-    database.transaction(function(tx)
-    // init SQL transaction
+    if (!tx || !tx.executeSql)
+    {
+      database.transaction(function(tx)
+      // init SQL transaction
+      {
+        _initDb(tx);
+      },
+      // ERRORS
+      function(err)
+      {
+        $.db.throwSqlError(err, sql);
+      },
+      // success
+      function()
+      {
+        initialized = true;
+      });
+    }
+    else
     {
       // Tables
       sql = "::tables";
@@ -534,17 +552,8 @@
         }
       }
 
-    },
-    // ERRORS
-    function(err)
-    {
-      $.db.throwSqlError(err, sql);
-    },
-    // success
-    function()
-    {
       initialized = true;
-    });
+    }
   }
 
 

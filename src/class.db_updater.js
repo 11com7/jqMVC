@@ -312,10 +312,14 @@ jq.DbUpdater = (function(/** jq */ $)
         ["version", "INTEGER", "NOT NULL"]
       );
 
+      this.addInitFunction(function(tx)
+      {
+        self._insertVersion(tx, self._getUpdateFuncVersionMax.call(self));
+      });
+
       this._prepareExecution.call(this, 0, this._initFuncs);
       this._startExecution(function(tx)
       {
-        self._updateVersion(tx, self._getUpdateFuncVersionMax.call(self));
         console.log(arguments, "INIT FERTIG");
       });
     },
@@ -364,12 +368,6 @@ jq.DbUpdater = (function(/** jq */ $)
           self._tx = tx;
           self._nextExecution();
         },
-        // SUCCESS
-        function(tx, results)
-        {
-          self._tx = null;
-          readyCallback.call(self, results);
-        },
         // ERROR
         function(tx, error)
         {
@@ -385,6 +383,12 @@ jq.DbUpdater = (function(/** jq */ $)
             self.dbg("SQL-ERROR " + errNo + " --- ROLL BACK!");
             throw new Error("DbUpdater SQL-Error + (" + errNo + "): '" + msg + "'");
           }
+        },
+        // SUCCESS
+        function(tx, results)
+        {
+          self._tx = null;
+          readyCallback.call(self, results);
         }
       );
     },
@@ -421,16 +425,20 @@ jq.DbUpdater = (function(/** jq */ $)
     _updateVersion : function(tx, version)
     {
       this.dbg("update version column to #" + version);
-      var sql = this._getUpdateVersionSql();
+      var sql = "UPDATE " + this._options.versionTable + " SET version = ?";
       //noinspection JSValidateTypes
+      this.dbg(sql);
       tx.executeSql(sql, [version]);
     },
 
-    _getUpdateVersionSql : function()
+    _insertVersion : function(tx, version)
     {
-      return "UPDATE " + this._options.versionTable + " SET version = ?";
+      this.dbg("set version to #" + version);
+      var sql = "INSERT INTO " + this._options.versionTable + " VALUES (?)";
+      //noinspection JSValidateTypes
+      this.dbg(sql);
+      tx.executeSql(sql, [version]);
     },
-
 
 
     // --------------------------------------------------------------------------------
