@@ -177,6 +177,8 @@ jq.DbUpdater = (function(/** jq */ $)
     {
       if (this._status > STATUS_INIT) { throw new Error("DbUpdater error: already in execution or executed. Please use addInitFunction() before execute()."); }
 
+      this.dbg("addInitFunction(", typeof(func), ")");
+
       if (!!func && $.isFunction(func))
       {
         this._initFuncs.push(func);
@@ -186,19 +188,20 @@ jq.DbUpdater = (function(/** jq */ $)
     },
 
     /**
-     * @param {!Number} version  has to be a continuous increasing integer (1, 2, 3, 4, …) version number
+     * @param {!Number} vers  version, has to be a continuous increasing integer (1, 2, 3, 4, …) version number
      * @param {function(SQLTransaction)} func
      * @return {DbUpdater}
      */
-    addUpdateFunction : function(version, func)
+    addUpdateFunction : function(vers, func)
     {
       if (this._status > STATUS_INIT) { throw new Error("DbUpdater error: already in execution or executed. Please use addUpdateFunction() before execute()."); }
 
-      if (version <= 0) { version = this._getUpdateFuncVersionMax()+1; }
+      var version = vers > 0 ? vers : this._getUpdateFuncVersionMax()+1;
+      this.dbg("addUpdateFunction(", vers, typeof(func), ") --> version: ", version);
 
       if (this._updateFuncs.length > 0)
       {
-        var prevVersion = this._updateFuncs[this._updateFuncs.length-1];
+        var prevVersion = this._updateFuncs[this._updateFuncs.length-1][0];
         if (version <= prevVersion)
         {
           throw new Error("DbUpdater error: new version (" + version + ") is lower or equal than the previous version (" + prevVersion + "). Please use increasing version numbers.");
@@ -221,6 +224,8 @@ jq.DbUpdater = (function(/** jq */ $)
     addReadyFunction : function(func)
     {
       if (this._status > STATUS_INIT) { throw new Error("DbUpdater error: exceute() has already called. Please use addReadyFunction() before execute()."); }
+
+      this.dbg("addReadyFunction(", typeof(func), ")");
 
       if (!!func && $.isFunction(func))
       {
@@ -350,7 +355,7 @@ jq.DbUpdater = (function(/** jq */ $)
         {
           stack.push([0, functions[t]]);
         }
-        else if (version > functions[t][0])
+        else if (version < functions[t][0])
         {
           stack.push(functions[t]);
         }
