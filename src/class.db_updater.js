@@ -314,7 +314,10 @@ jq.DbUpdater = (function(/** jq */ $)
       this._type = TYPE_INIT;
 
       $.db.addTable(this._options.versionTable,
-        ["version", "INTEGER", "NOT NULL"]
+        [
+          ["version", "INTEGER", "NOT NULL"],
+          ["dt_create"]
+        ]
       );
 
       this.addInitFunction(function(tx)
