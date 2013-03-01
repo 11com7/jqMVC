@@ -258,7 +258,7 @@ jq.DbUpdater = (function(/** jq */ $)
       this._database.transaction(
         function(tx)
         {
-          var sql = "SELECT version FROM " + self._options.versionTable;
+          var sql = "SELECT MAX(version) FROM " + self._options.versionTable;
           tx.executeSql(sql, [],
             /**
              * UPDATE
@@ -335,7 +335,6 @@ jq.DbUpdater = (function(/** jq */ $)
 
     _prepareUpdateExecution : function(tx, version)
     {
-      var self = this;
       this.dbg("found version number", version, "=> type UPDATE");
       this._type = TYPE_UPDATE;
       this._prepareExecution.call(this, version, this._updateFuncs);
@@ -377,7 +376,7 @@ jq.DbUpdater = (function(/** jq */ $)
           self._nextExecution();
         },
         // ERROR
-        function(tx, error)
+        function(error)
         {
           if ($.isFunction(self._options.errorFunc))
           {
@@ -385,8 +384,18 @@ jq.DbUpdater = (function(/** jq */ $)
           }
           else
           {
-            var msg = (!!error && error.message) ? error.message : '';
-            var errNo = (!!error && error.code) ? error.code : -42;
+            var msg,errNo;
+
+            if (typeof error !== "undefined")
+            {
+              msg = (!!error && error.message) ? error.message : '-- unknown --';
+              errNo = (!!error && error.code) ? error.code : -42;
+            }
+            else
+            {
+              msg = "-- undefined --";
+              errNo = -4242;
+            }
 
             self.dbg("SQL-ERROR " + errNo + " --- ROLL BACK!");
             throw new Error("DbUpdater SQL-Error + (" + errNo + "): '" + msg + "'");
@@ -416,7 +425,7 @@ jq.DbUpdater = (function(/** jq */ $)
 
         if (version > 0)
         {
-          this._updateVersion(this._tx, version);
+          this._insertVersion(this._tx, version);
         }
 
         this._nextExecution();
@@ -430,19 +439,10 @@ jq.DbUpdater = (function(/** jq */ $)
 
 
 
-    _updateVersion : function(tx, version)
-    {
-      this.dbg("update version column to #" + version);
-      var sql = "UPDATE " + this._options.versionTable + " SET version = ?";
-      //noinspection JSValidateTypes
-      this.dbg(sql);
-      tx.executeSql(sql, [version]);
-    },
-
     _insertVersion : function(tx, version)
     {
       this.dbg("set version to #" + version);
-      var sql = "INSERT INTO " + this._options.versionTable + " VALUES (?)";
+      var sql = "INSERT INTO " + this._options.versionTable + " VALUES (version = ?)";
       //noinspection JSValidateTypes
       this.dbg(sql);
       tx.executeSql(sql, [version]);
