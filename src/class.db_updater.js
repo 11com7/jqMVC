@@ -258,7 +258,7 @@ jq.DbUpdater = (function(/** jq */ $)
       this._database.transaction(
         function(tx)
         {
-          var sql = "SELECT MAX(version) FROM " + self._options.versionTable;
+          var sql = "SELECT MAX(version) as version FROM " + self._options.versionTable;
           tx.executeSql(sql, [],
             /**
              * UPDATE
@@ -482,7 +482,7 @@ jq.DbUpdater = (function(/** jq */ $)
     _getUpdateFuncVersionMax : function()
     {
       var len = this._updateFuncs.length;
-      return len > 0 ? this._updateFuncs[len-1][0] : 0;
+      return len > 0 ? this._updateFuncs[len-1][0] : 1;
     },
     // --------------------------------------------------------------------------------
     // Constants
