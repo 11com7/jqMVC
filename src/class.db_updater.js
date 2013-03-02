@@ -442,7 +442,7 @@ jq.DbUpdater = (function(/** jq */ $)
     _insertVersion : function(tx, version)
     {
       this.dbg("set version to #" + version);
-      var sql = "INSERT INTO " + this._options.versionTable + " VALUES (version = ?)";
+      var sql = "INSERT INTO " + this._options.versionTable + " (version) VALUES (?)";
       //noinspection JSValidateTypes
       this.dbg(sql);
       tx.executeSql(sql, [version]);
