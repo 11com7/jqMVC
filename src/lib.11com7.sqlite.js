@@ -653,6 +653,102 @@
 
 
   // ===================================================================================================================
+  // INSERT MULTI ROWS
+  // ===================================================================================================================
+  /**
+   * Creates a multi row INSERT sql statement and inserts it in the database.
+   * @param {String} tableName
+   * @param {Array} columns
+   * @param {Array} rows has to be an array with data arrays [[colData1, ..., colDataN], [...]]
+   * @param {SQLTransaction} [tx] the functions creates a SQLTransaction if necessary
+   * @param {function(SQLTransaction, SQLResultSet)} [readyCallback]
+   * @param {function(SQLTransaction, SQLError)} [errorCallback]
+   */
+  $.db.insertMultiRows = function(tableName, columns, rows, tx, readyCallback, errorCallback)
+  {
+    // start transaction if necessary
+    if (typeof tx !== "object")
+    {
+      $.db.getDatabase().transaction(function(tx)
+      {
+        $.db.insertMultiRows(tableName, columns, rows, tx, readyCallback, errorCallback);
+      });
+    }
+
+    if (!tableName) { throw new Error("missing or empty tableName"); }
+    if (!$.db.tableExists(tableName)) { throw new Error("tableName '" + tableName + "' isn't added/defined."); }
+
+    $.db.checkColumns(tableName, columns);
+
+    readyCallback = $.isFunction(readyCallback) ? readyCallback : undefined;
+    errorCallback = $.isFunction(errorCallback) ? errorCallback : undefined;
+
+    var sql = $.db.createSqlInsertMultiRows(tableName, columns, rows);
+    var values = [];
+
+    for (var t = 0; t < rows.length; t++)
+    {
+      var row = $.db.prepareData(rows[t]);
+      for (var tt = 0; tt < row.length; tt++)
+      {
+        values.push(row[tt]);
+      }
+    }
+
+    $.db.dbg(sql);
+    //noinspection JSValidateTypes
+    tx.executeSql(sql, values, readyCallback, errorCallback);
+  };
+
+  /**
+   *
+   * @param {String} tableName
+   * @param {Array} columns
+   * @param {Array} rows has to be an array with data arrays [[colData1, ..., colDataN], [...]]
+   * @return {String}
+   */
+  $.db.createSqlInsertMultiRows = function(tableName, columns, rows)
+  {
+    if (!rows || !rows.length || rows.length < 1) { return ""; }
+
+    var sql = "INSERT INTO " + tableName + "(" + columns.join(',') + ") ";
+
+
+    // first row as select
+    var asTmp = [], placeholders = [], placeholder = "";
+    for (var t=0; t < columns.length; t++)
+    {
+      asTmp.push("? as " + columns[t]);
+      placeholders.push("?");
+    }
+
+    sql += " SELECT " + asTmp.join(",");
+
+    // then add the next rows as UNION ALL SELECT
+    asTmp = [];
+    placeholder = placeholders.join(", ");
+    for (t=1; t < rows.length; t++)
+    {
+      asTmp.push("UNION ALL SELECT " + placeholder);
+    }
+
+    sql += " " + asTmp.join(" ");
+
+    return sql;
+  };
+
+
+  /**
+   *
+   * @param {Array.<*>} data
+   */
+  $.db.prepareData = function(data)
+  {
+    return data;
+  };
+
+
+  // ===================================================================================================================
   // auto magic helper
   // ===================================================================================================================
   //noinspection FunctionWithMoreThanThreeNegationsJS
