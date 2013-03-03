@@ -8,8 +8,9 @@
  *
  * @author Dominik Pesch <d.pesch@11com7.de>
  * @since 2012-09-30
+ * @namespace jq.db
  */
-(function($, window, undefined)
+(function(/** jq */ $, window, undefined)
 {
   "use strict";
 
@@ -30,6 +31,8 @@
       timestamp_type : 'INTEGER',
       debug : false
     },
+
+    sqlLast = '',
 
     initialized = false,
 
@@ -59,33 +62,8 @@
   $.db = {};
 
   // ===================================================================================================================
-  // DEBUG + ERROR/EXCEPTION helper
+  // OPTIONS
   // ===================================================================================================================
-  //noinspection JSCommentMatchesSignature
-  /**
-   * debugs any values to console.log (if exists && options.debug)
-   * @param {...*} arguments
-   */
-  $.db.dbg = function()
-  {
-    if (options.debug && console && console.log)
-    {
-      console.log.apply(console, arguments);
-    }
-  };
-
-  /**
-   * Throws an Error object.
-   * @param {SQLError|SQLException} errorObject
-   * @param {String} [sql]
-   */
-  $.db.throwSqlError = function(errorObject, sql)
-  {
-    sql = sql || "-- unknown --";
-    throw new Error("SQL ERROR #" + errorObject.code + ": " + errorObject.message + " in '" + sql + "'");
-  };
-
-
   /**
    * Set options (object) or one option to value.
    * @param {Object|String} tOptions  (Object) set existing option keys to tOption values;
@@ -485,7 +463,7 @@
     if (!$.db.isOpen())
     {
       if (!options.autoInit)
-      { //noinspection JSCheckFunctionSignatures
+      { //noinspection JSCheckFunctionSignatures,JSValidateTypes
         $(document).on("SQL:open", _initDb)
       }
 
@@ -569,13 +547,11 @@
     if (!!options.dropOnInit)
     {
       sql = $.template(SQL_DROP_TABLE, {'table' : name});
-      $.db.dbg(sql);
-      tx.executeSql(sql);
+      $.db.executeSql(tx, sql);
     }
 
     sql = $.template(SQL_CREATE_TABLE, {'table' : name, 'fields' : _getSqlTableColumns(name), 'constraints' : _getSqlTableConstraints(name) });
-    $.db.dbg(sql);
-    tx.executeSql(sql);
+    $.db.executeSql(tx, sql);
   };
 
   /**
@@ -590,13 +566,11 @@
     if (!!options.dropOnInit)
     {
       sql = $.template(SQL_DROP_TRIGGER, {'trigger' : trigger});
-      $.db.dbg(sql);
-      tx.executeSql(sql);
+      $.db.executeSql(tx,sql);
     }
 
     sql = $.template(SQL_CREATE_TRIGGER, {'trigger' : trigger,  'definition' : triggers[trigger] });
-    $.db.dbg(sql);
-    tx.executeSql(sql);
+    $.db.executeSql(tx,sql);
   };
 
   /**
@@ -611,13 +585,11 @@
     if (!!options.dropOnInit)
     {
       sql = $.template(SQL_DROP_INDEX, {'index' : index});
-      $.db.dbg(sql);
-      tx.executeSql(sql);
+      $.db.executeSql(tx, sql);
     }
 
     sql = $.template(SQL_CREATE_INDEX, {'name' : index, 'unique' : indexes[index].unique, 'table' : indexes[index].table, 'fields' : indexes[index].columns.join(", ") });
-    $.db.dbg(sql);
-    tx.executeSql(sql);
+    $.db.executeSql(tx, sql);
   };
 
 
@@ -653,6 +625,92 @@
 
 
   // ===================================================================================================================
+  // SQL EXECUTE
+  // ===================================================================================================================
+  /**
+   * Executes a sql statement with some auto enhancements (THIS FUNCTION SHOULD BE USED FOR ALL DATABASE EXECUTIONS!).
+   * - auto transaction creation
+   * - auto debugging
+   * - auto store last sql statement (for errors)
+   *
+   * @param {?SQLTransaction} tx transaction object OR undefined for auto transaction
+   * @param {string} sql
+   * @param {Object|Array} data
+   * @param {function(SQLTransaction, SQLResultSet)} successCallback
+   * @param {function(SQLTransaction, SQLError)} errorCallback
+   */
+  $.db.executeSql = function(tx, sql, data, successCallback, errorCallback)
+  {
+    // no transaction
+    if (!tx || typeof tx !== "object" || !tx.executeSql)
+    {
+      $.db.getDatabase().transaction(function(tx)
+      {
+        $.db.executeSql(tx, sql, data, successCallback, errorCallback);
+      });
+      return;
+    }
+
+    // change arguments if data is successCallback
+    if ($.isFunction(data) && typeof errorCallback === "undefined")
+    {
+      //noinspection JSValidateTypes
+      errorCallback = successCallback;
+      //noinspection JSValidateTypes
+      successCallback = data;
+      data = [];
+    }
+    else
+    {
+      data = !!data ? data : [];
+    }
+
+    successCallback = $.isFunction(successCallback) ? successCallback : undefined;
+    errorCallback = $.isFunction(errorCallback) ? errorCallback : undefined;
+
+    /** @type {SQLTransaction} tx */
+    sqlLast = sql;
+    if (options.debug) { $.db.dbg(sql, data); }
+    //noinspection JSValidateTypes
+    tx.executeSql(sql, data, successCallback, errorCallback);
+  };
+
+
+  // ===================================================================================================================
+  // DEBUG & EXCEPTIONS
+  // ===================================================================================================================
+  //noinspection JSCommentMatchesSignature
+  /**
+   * debugs any values to console.log (if exists && options.debug)
+   * @param {...*} arguments
+   */
+  $.db.dbg = function()
+  {
+    if (options.debug && console && console.log)
+    {
+      console.log.apply(console, arguments);
+    }
+  };
+
+  /**
+   * Throws an Error object.
+   * This function will show the last sql statement, if $.db.executeSql() is used
+   * @param {SQLError|SQLException} errorObject
+   * @param {String} [sql]
+   * @see $.db.executeSql()
+   */
+  $.db.throwSqlError = function(errorObject, sql)
+  {
+    sql = sql || "sqlLast: »" + sqlLast + "«";
+    var
+      code = (!!errorObject && !!errorObject.code) ? errorObject.code : -424242,
+      msg = (!!errorObject && !!errorObject.message) ? errorObject.message : "?unknown?";
+
+    throw new Error("SQL ERROR #" + code + ": " + msg + " in '" + sql + "'");
+  };
+
+
+  // ===================================================================================================================
   // INSERT MULTI ROWS
   // ===================================================================================================================
   /**
@@ -673,6 +731,7 @@
       {
         $.db.insertMultiRows(tableName, columns, rows, tx, readyCallback, errorCallback);
       });
+      return;
     }
 
     if (!tableName) { throw new Error("missing or empty tableName"); }
@@ -695,9 +754,8 @@
       }
     }
 
-    $.db.dbg(sql);
     //noinspection JSValidateTypes
-    tx.executeSql(sql, values, readyCallback, errorCallback);
+    $.db.executeSql(tx, sql, values, readyCallback, errorCallback);
   };
 
   /**
@@ -715,7 +773,7 @@
 
 
     // first row as select
-    var asTmp = [], placeholders = [], placeholder = "";
+    var asTmp = [], placeholders = [], placeholder;
     for (var t=0; t < columns.length; t++)
     {
       asTmp.push("? as " + columns[t]);
@@ -738,19 +796,81 @@
   };
 
 
+  // ===================================================================================================================
+  // DROP DATABASE (polyfill)
+  // ===================================================================================================================
   /**
-   *
-   * @param {Array.<*>} data
+   * This function will delete every deletable table, view, index, trigger and resets the sqlite_sequence table.
+   * As there isn't a way to drop the database with JavaScript, this function is just a polyfill.
+   * @param {SQLTransaction} [tx] the functions creates a SQLTransaction if necessary
    */
-  $.db.prepareData = function(data)
+  $.db.dropDatabase = function(tx)
   {
-    return data;
+    if (!tx || !tx.executeSql || typeof tx === "undefined")
+    {
+      $.db.getDatabase().transaction(function(tx)
+      {
+        $.db.dropDatabase(tx);
+      },
+      function(error)
+      {
+        $.db.throwSqlError(error);
+      });
+
+      return;
+    }
+
+
+    /** @type {SQLTransaction} tx */
+    $.db.executeSql(tx, "SELECT type,name FROM sqlite_master", [],
+      // SUCCESS
+      function(tx, results)
+      {
+        // ignore this entities
+        var ignoreNames =
+        {
+          "__WebKitDatabaseInfoTable__" : true,
+          "sqlite_autoindex___WebKitDatabaseInfoTable___1" : true,
+          "sqlite_sequence" : true
+        };
+
+        // delete all table, trigger, indexes, views (ignore the entities above)
+        for (var t = 0; t < results.rows.length; t++)
+        {
+          var name = results.rows.item(t).name;
+          if (!ignoreNames.hasOwnProperty(name))
+          {
+            $.db.executeSql(tx, "DROP " + results.rows.item(t).type + " IF EXISTS " + name);
+          }
+        }
+
+        $.db.executeSql(tx, "DELETE FROM sqlite_sequence"); // delete all auto ids
+      },
+      // ERROR
+      function(tx, error)
+      {
+        $.db.throwSqlError(error);
+      }
+    );
+
   };
 
 
   // ===================================================================================================================
   // auto magic helper
   // ===================================================================================================================
+  /**
+   *
+   * @param {*|Array.<*>} data
+   * @return {*}
+   */
+  $.db.prepareData = function(data)
+  {
+    // TODO, dom, 2013-03-03: prapreData
+    return data;
+  };
+
+
   //noinspection FunctionWithMoreThanThreeNegationsJS
   /**
    * Checks table definitions for automagic columns (like dt_create, dt_change) and defines column definitions and trigger.
