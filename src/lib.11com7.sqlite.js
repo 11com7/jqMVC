@@ -42,7 +42,7 @@
     views = {},
 
     // templates
-    SQL_DT_DEFAULT = "STRFTIME('%s', 'NOW', 'LOCALTIME')",
+    SQL_DT_DEFAULT = "STRFTIME('%s', 'NOW')",
     SQL_DT_CONSTRAINTS = "NOT NULL DEFAULT (" + SQL_DT_DEFAULT + ")",
     SQL_CREATE_TABLE = "CREATE TABLE IF NOT EXISTS <%=table%> (<%=fields%><%=constraints%>);",
     SQL_CREATE_INDEX = "CREATE<%=unique%> INDEX IF NOT EXISTS <%=name%> ON <%=table%> (<%=fields%>);",
@@ -54,9 +54,24 @@
     SQL_DT_CHANGE_TRIGGER =  " AFTER UPDATE ON <%=table%> " +
                               "BEGIN " +
                                 "UPDATE <%=table%> SET dt_change = " + SQL_DT_DEFAULT + " WHERE new.id = id; " +
-                              "END;"
+                              "END;",
 
+    // Timestamp templates
+    timestampTpl = {
+      INTEGER : "STRFTIME('%s', ?)",
+      TEXT : "STRFTIME('%Y-%m-%d %H:%M:%S', ?)", // <-- 'NOW' needs here an additional modifier ", LOCALTIME"
+      NUMERIC : "STRFTIME('%J', ?)"
+    },
+    timeConverter = {
+      INTEGER : function(seconds) { return new Date(seconds*1000);},
+      // Safari needs some help (YYYY/MM/DD instead of YYYY-MM-DD)
+      TEXT : function(dtstring) { return new Date(dtstring.replace(/-/g,"/")); },
+      // Julian Date: unix epoch = 2440587.5 JD + sqlite assumes each day as "[...] exactly 86400 seconds [...]" (see http://www.sqlite.org/lang_datefunc.html)
+      NUMERIC : function(juldate) { return new Date((juldate - 2440587.5) * 86400.0 * 1000); }
+    }
     ;
+
+
 
 
   $.db = {};
@@ -128,7 +143,7 @@
       }
       catch (e)
       {
-        $.db.throwSqlError(e, "openDatabase('" + options.name + "', '" + options.version + "', '" + options.displayName + "', '" + options.databaseSize + "'");
+        throw $.db.SqlError(e, "", "openDatabase('" + options.name + "', '" + options.version + "', '" + options.displayName + "', '" + options.databaseSize + "'");
       }
     }
 
@@ -224,9 +239,12 @@
       columns = [ columns ];
     }
 
+    // columns: [0...n-1]['fieldName', 'type', 'column-constraints']
     var pos;
     for (var t = 0; t < columns.length; t++)
     {
+      if (columns[t][1]) { columns[t][1] = columns[t][1].toUpperCase(); } // TYPE to uppercase
+
       // replace column
       if ((pos = _getColumnIndex(tableName, columns[t][0])) !== -1)
       {
@@ -493,7 +511,7 @@
       // ERRORS
       function(err)
       {
-        $.db.throwSqlError(err, sql);
+        throw $.db.SqlError(err, sql);
       },
       // success
       function()
@@ -606,7 +624,12 @@
 
     for (t=0; t < columns.length; t++)
     {
-      sqlColumns.push(_getColumnData(tableName, columns[t]).join(" "));
+      var columnData = _getColumnData(tableName, columns[t]);
+
+      // TYPE: convert to sql type (needed for auto date magic handling)
+      columnData[1] = $.db.getSqlColumnType(tableName, columns[t]);
+
+      sqlColumns.push(columnData.join(" "));
     }
 
     return sqlColumns.join(", ");
@@ -635,9 +658,9 @@
    *
    * @param {?SQLTransaction} tx transaction object OR undefined for auto transaction
    * @param {string} sql
-   * @param {Object|Array} data
-   * @param {function(SQLTransaction, SQLResultSet)} successCallback
-   * @param {function(SQLTransaction, SQLError)} errorCallback
+   * @param {Object|Array} [data]
+   * @param {function(SQLTransaction, SQLResultSet)} [successCallback]
+   * @param {function(SQLTransaction, SQLError)} [errorCallback]
    */
   $.db.executeSql = function(tx, sql, data, successCallback, errorCallback)
   {
@@ -693,20 +716,24 @@
   };
 
   /**
-   * Throws an Error object.
+   * (Factory) Creates a new Error/Exception object for a sql error.
    * This function will show the last sql statement, if $.db.executeSql() is used
+   * @see $.db.executeSql()
    * @param {SQLError|SQLException} errorObject
    * @param {String} [sql]
-   * @see $.db.executeSql()
+   * @param {String} [comment]
+   * @return {Error}
    */
-  $.db.throwSqlError = function(errorObject, sql)
+  $.db.SqlError = function(errorObject, sql, comment)
   {
     sql = sql || "sqlLast: »" + sqlLast + "«";
+    comment = comment || "";
+
     var
       code = (!!errorObject && !!errorObject.code) ? errorObject.code : -424242,
       msg = (!!errorObject && !!errorObject.message) ? errorObject.message : "?unknown?";
 
-    throw new Error("SQL ERROR #" + code + ": " + msg + " in '" + sql + "'");
+    return new Error("SQL ERROR #" + code + ": " + msg + " in '" + sql + "' --- " + comment);
   };
 
 
@@ -814,7 +841,7 @@
       },
       function(error)
       {
-        $.db.throwSqlError(error);
+        throw $.db.SqlError(error);
       });
 
       return;
@@ -849,7 +876,7 @@
       // ERROR
       function(tx, error)
       {
-        $.db.throwSqlError(error);
+        throw $.db.SqlError(error);
       }
     );
 
@@ -857,7 +884,7 @@
 
 
   // ===================================================================================================================
-  // auto magic helper
+  // data helper
   // ===================================================================================================================
   /**
    *
@@ -866,11 +893,127 @@
    */
   $.db.prepareData = function(data)
   {
-    // TODO, dom, 2013-03-03: prapreData
+    // TODO, dom, 2013-03-03: prepareData
     return data;
   };
 
 
+  // ===================================================================================================================
+  // data helper
+  // ===================================================================================================================
+  /**
+   * Returns the placeholder(s) for one, some or all columns of a table.
+   * This function must be called for DATE, DATETIME or TIME columns.
+   * @param {String} tableName  !table must exists!
+   * @param {String|Array} [column] (string) existing column;
+   *                                (array) [0...n-1]] existing columns;
+   *                                (undefined) all columns
+   * @return {String|Array.<String>} (string) sql placeholder for column;
+   *                                 (array) [0...n-1] placeholder for given or all columns
+   */
+  $.db.getColumnPlaceholder = function(tableName, column)
+  {
+    if (!tableName) { throw new Error("missing or empty tableName"); }
+    if (!$.db.tableExists(tableName)) { throw new Error("tableName '" + tableName + "' isn't added/defined."); }
+
+    // call with column => return String
+    if ($.is("String", column))
+    {
+      var colType = $.db.getColumnType(tableName, column), sqlType = $.db.getSqlColumnType(tableName, column);
+
+      if (_isDateType(colType))
+      {
+        if (!timestampTpl.hasOwnProperty(sqlType))
+        {
+          throw new Error("ERROR unknown date type '" + colType + "' --> '" + sqlType + "' in " + tableName + "." + column);
+        }
+
+        return timestampTpl[sqlType];
+      }
+      else
+      {
+        return "?";
+      }
+    }
+    // call a selection of columns => return Array!
+    else if ($.is("Array", column))
+    {
+      $.db.checkColumns(tableName, column);
+      //noinspection JSUnresolvedFunction
+      return column.map( _columnPlaceholderMapper );
+    }
+    // call for all columns => return Array!
+    else if (typeof column === "undefined")
+    {
+      var columns = $.db.getColumns(tableName);
+      return columns.map( _columnPlaceholderMapper );
+    }
+    else
+    {
+      throw new Error("ERROR: unsupported column type (" + (typeof column) + "). ");
+    }
+
+    /**
+     * @ignore
+     * @param {String} col
+     * @return {Array.<String>} placeholder array
+     * @private
+     */
+    function _columnPlaceholderMapper(col) { return $.db.getColumnPlaceholder(tableName, col); }
+  };
+
+
+
+
+  // ===================================================================================================================
+  // public helper
+  // ===================================================================================================================
+  /**
+   * Returns the column/type affinity for a SQLite type.
+   * @see http://www.sqlite.org/datatype3.html#affname
+   * @param {String} type sql type (of CREATE TABLE or CAST)
+   * @return {String} SQLite type [INTEGER|TEXT|NONE|REAL|NUMERIC]
+   */
+  $.db.getTypeAffinity = function(type)
+  {
+    if (!type || !$.is("String", type))  { return "NONE"; }
+    type = type.toUpperCase();
+
+    if (type.indexOf("INT") > -1)  { return "INTEGER"; }
+    if (type.indexOf("CHAR") > -1 ||type.indexOf("TEXT") > -1 ||type.indexOf("CLOB") > -1)  { return "TEXT"; }
+    if (type.indexOf("BLOB") > -1)  { return "NONE"; }
+    if (type.indexOf("REAL") > -1 ||type.indexOf("FLOA") > -1 ||type.indexOf("DOUB") > -1)  { return "REAL"; }
+
+    return "NUMERIC";
+  };
+
+
+  /**
+   * Returns a SQLite type (DATE/TIME types will be changed to the SQLite type affinity of options.timestamp_type).
+   * @param {String} tableName !must exists!
+   * @param {String} column !must exists!
+   * @return {String} SQLite type
+   */
+  $.db.getSqlColumnType = function(tableName, column)
+  {
+    var colType = $.db.getColumnType(tableName, column);
+    return $.db.getTypeAffinity(_isDateType(colType) ? options.timestamp_type : colType);
+  };
+
+  /**
+   * @param {String} colType has to be UPPERCASE
+   * @return {Boolean} TRUE if colType contains DATE or TIME
+   * @private
+   */
+  function _isDateType(colType)
+  {
+    return (colType.indexOf("DATE") > -1 || colType.indexOf("TIME") > 0)
+  }
+
+
+  // ===================================================================================================================
+  // auto magic helper
+  // ===================================================================================================================
   //noinspection FunctionWithMoreThanThreeNegationsJS
   /**
    * Checks table definitions for automagic columns (like dt_create, dt_change) and defines column definitions and trigger.
@@ -1007,6 +1150,7 @@
    */
   function _trigger(event)
   {
+    //noinspection JSValidateTypes
     var $document = $(document);
     $document.trigger.apply($document, arguments);
   }
@@ -1032,5 +1176,26 @@
     }
   }
 
+
+  // ===================================================================================================================
+  // jQuery/jq helper
+  // ===================================================================================================================
+  //noinspection JSAccessibilityCheck
+  if (typeof $.is === "undefined")
+  {
+    /**
+     * tests an object if it has a specified type.
+     * @param {String} type Class name [String|Number|Boolean|Date|Array|Object|Function|RegExp] OR undefined OR null
+     * @param {*} obj
+     * @return {Boolean} TRUE if type matches the class of obj
+     */
+    $.is = function(type, obj)
+    {
+      if (obj === undefined) { return type === "undefined"; }
+      if (obj === null) { return type === "null"; }
+      var objClass = Object.prototype.toString.call(obj).slice(8, -1);
+      return objClass === type || objClass.toLowerCase() === type;
+    }
+  }
 
 })(jq, window);
