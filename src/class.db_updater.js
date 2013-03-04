@@ -259,7 +259,7 @@ jq.DbUpdater = (function(/** jq */ $)
         function(tx)
         {
           var sql = "SELECT MAX(version) as version FROM " + self._options.versionTable;
-          tx.executeSql(sql, [],
+          $.db.executeSql(tx, sql, [],
             /**
              * UPDATE
              * @param {SQLTransaction} tx
@@ -276,7 +276,7 @@ jq.DbUpdater = (function(/** jq */ $)
               {
                 self.dbg("CORRUPT VERSION TABLE --> TRY RE-INIT");
                 sql = "DROP TABLE " + self._options.versionTable;
-                tx.executeSql(sql, self._prepareInitExecution.call(self, tx));
+                $.db.executeSql(tx, sql, self._prepareInitExecution.call(self, tx));
               }
             },
             /**
@@ -294,9 +294,7 @@ jq.DbUpdater = (function(/** jq */ $)
               // ERROR
               else
               {
-                var errorMsg = "SQL ERROR '" + error.message + "' #" + error.code + " in: '" + sql + "'";
-                self.dbg(errorMsg);
-                throw new Error(errorMsg);
+                throw $.db.SqlError(error);
               }
             });
         }
@@ -315,7 +313,7 @@ jq.DbUpdater = (function(/** jq */ $)
 
       $.db.addTable(this._options.versionTable,
         [
-          ["version", "INTEGER", "NOT NULL"],
+          ["version", "INTEGER", "NOT NULL UNIQUE"],
           ["dt_create"]
         ]
       );
@@ -384,21 +382,8 @@ jq.DbUpdater = (function(/** jq */ $)
           }
           else
           {
-            var msg,errNo;
-
-            if (typeof error !== "undefined")
-            {
-              msg = (!!error && error.message) ? error.message : '-- unknown --';
-              errNo = (!!error && error.code) ? error.code : -42;
-            }
-            else
-            {
-              msg = "-- undefined --";
-              errNo = -4242;
-            }
-
-            self.dbg("SQL-ERROR " + errNo + " --- ROLL BACK!");
-            throw new Error("DbUpdater SQL-Error + (" + errNo + "): '" + msg + "'");
+            self.dbg("SQL-ERROR --- ROLL BACK!");
+            throw $.db.SqlError(error);
           }
         },
         // SUCCESS
@@ -444,8 +429,7 @@ jq.DbUpdater = (function(/** jq */ $)
       this.dbg("set version to #" + version);
       var sql = "INSERT INTO " + this._options.versionTable + " (version) VALUES (?)";
       //noinspection JSValidateTypes
-      this.dbg(sql);
-      tx.executeSql(sql, [version]);
+      $.db.executeSql(tx, sql, [version]);
     },
 
 

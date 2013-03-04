@@ -91,7 +91,7 @@ var SqliteStorageAdapter = (function($)
           },
           // ERROR
           function(err) {
-            $.db.throwSqlError(err, sql);
+            throw $.db.SqlError(err, sql);
           },
           // SUCCESS
           function()
@@ -101,7 +101,7 @@ var SqliteStorageAdapter = (function($)
       }
       catch(err)
       {
-        $.db.throwSqlError(err, sql || "-- unknown --");
+        throw $.db.SqlError(err, sql);
       }
     },
 
@@ -166,7 +166,7 @@ var SqliteStorageAdapter = (function($)
     _saveExecuteSql : function(tx, obj, sql, values, isNew)
     {
       //noinspection JSValidateTypes
-      tx.executeSql(sql, values, function(tx, results)
+      $.db.executeSql(tx, sql, values, function(tx, results)
       {
         if (isNew)
         {
@@ -231,7 +231,7 @@ var SqliteStorageAdapter = (function($)
 
         db.transaction(function(tx)
           {
-            tx.executeSql(sql, [id], function(tx, results)
+            $.db.executeSql(tx, sql, [id], function(tx, results)
             {
               var el = null;
 
@@ -251,12 +251,12 @@ var SqliteStorageAdapter = (function($)
           // ERROR
           function(err)
           {
-            $.db.throwSqlError(err, sql);
+            throw $.db.SqlError(err, sql);
           });
       }
       catch(err)
       {
-        $.db.throwSqlError(err, sql || "-- unknown --");
+        throw $.db.SqlError(err, sql);
       }
     },
 
@@ -293,7 +293,7 @@ var SqliteStorageAdapter = (function($)
 
         db.transaction(function(tx)
         {
-          tx.executeSql(sql, [], function(tx, results)
+          $.db.executeSql(tx, sql, [], function(tx, results)
           {
             for (var t = 0; t < results.rows.length; t++)
             {
@@ -307,12 +307,12 @@ var SqliteStorageAdapter = (function($)
         // ERROR
         function(err)
         {
-          $.db.throwSqlError(err, sql);
+          throw $.db.SqlError(err, sql);
         });
       }
       catch (err)
       {
-        $.db.throwSqlError(err, sql || "-- unknown --");
+        throw $.db.SqlError(err, sql);
       }
     },
 
@@ -345,7 +345,7 @@ var SqliteStorageAdapter = (function($)
 
         db.transaction(function(tx)
         {
-          tx.executeSql(sql, [obj.id], function(tx, results)
+          $.db.executeSql(tx, sql, [obj.id], function(tx, results)
           {
             if (results.rowsAffected)
             {
@@ -357,12 +357,12 @@ var SqliteStorageAdapter = (function($)
         // ERROR
         function(err)
         {
-          $.db.throwSqlError(err, sql);
+          throw $.db.SqlError(err, sql);
         });
       }
       catch (err)
       {
-        $.db.throwSqlError(err, sql || "-- unknown --");
+        throw $.db.SqlError(err, sql);
       }
     },
 
@@ -382,7 +382,7 @@ var SqliteStorageAdapter = (function($)
       }
       catch(err)
       {
-        $.db.throwSqlError(err, query.getSql() || "-- unknown --");
+        throw $.db.SqlError(err, query.getSql());
       }
 
 
