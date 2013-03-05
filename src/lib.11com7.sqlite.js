@@ -63,7 +63,7 @@
       NUMERIC : "STRFTIME('%J', ?)"
     },
     timeConverter = {
-      INTEGER : function(seconds) { return new Date(seconds*1000);},
+      INTEGER : function(seconds) { return seconds != 0 ? new Date(seconds*1000) : parseInt(seconds, 10);},
       // Safari needs some help (YYYY/MM/DD instead of YYYY-MM-DD)
       TEXT : function(dtstring) { return new Date(dtstring.replace(/-/g,"/")); },
       // Julian Date: unix epoch = 2440587.5 JD + sqlite assumes each day as "[...] exactly 86400 seconds [...]" (see http://www.sqlite.org/lang_datefunc.html)
@@ -72,8 +72,9 @@
     ;
 
 
-
-
+  /**
+   * @namespace
+   */
   $.db = {};
 
   // ===================================================================================================================
@@ -887,21 +888,6 @@
   // data helper
   // ===================================================================================================================
   /**
-   *
-   * @param {*|Array.<*>} data
-   * @return {*}
-   */
-  $.db.prepareData = function(data)
-  {
-    // TODO, dom, 2013-03-03: prepareData
-    return data;
-  };
-
-
-  // ===================================================================================================================
-  // data helper
-  // ===================================================================================================================
-  /**
    * Returns the placeholder(s) for one, some or all columns of a table.
    * This function must be called for DATE, DATETIME or TIME columns.
    * @param {String} tableName  !table must exists!
@@ -962,6 +948,67 @@
     function _columnPlaceholderMapper(col) { return $.db.getColumnPlaceholder(tableName, col); }
   };
 
+
+  /**
+   * Prepare an array for sqlite: converts Date-Objects to ISOString.
+   * @param {*|Array.<*>} data
+   * @return {*}
+   */
+  $.db.prepareData = function(data)
+  {
+    var type = $.typeOf(data);
+
+    if (type === "Array")
+    {
+      //noinspection JSUnresolvedFunction
+      return data.map($.db.prepareData );
+    }
+    else if (type === "Date")
+    {
+      // yyyy-mm-ddThh:ii:ss.mmmZ
+      //noinspection JSUnresolvedFunction
+      return data.toISOString();
+    }
+    else if (type === "Object")
+    {
+      if (!!data.toString)
+      {
+        return data.toString();
+      }
+      else
+      {
+        throw new Error("ERROR: can't handle objects without toString() method for: '" + JSON.stringify(data) + "'");
+      }
+    }
+    else
+    {
+      return data;
+    }
+  };
+
+
+  /**
+   * Converts a sql date value to a JavaScript date object.
+   * @param {Number|String} dbValue ! has to match the timestampType
+   * @param {String} [timestampType]
+   * @return {Date} if timestampType didn't match the return will be an "Invalid Date"!
+   */
+  $.db.convertDate = function(dbValue, timestampType)
+  {
+    if (dbValue === null) { return null; }
+
+    timestampType = timestampType || options.timestamp_type;
+    var dtType = $.db.getTypeAffinity(timestampType);
+
+    if (timeConverter.hasOwnProperty(dtType))
+    {
+      return timeConverter[dtType](dbValue);
+    }
+    else
+    {
+      throw new Error("Unknown timestampType '" + timestampType + "' --> '" + dtType +"'");
+    }
+  };
 
 
 
@@ -1191,10 +1238,24 @@
      */
     $.is = function(type, obj)
     {
-      if (obj === undefined) { return type === "undefined"; }
-      if (obj === null) { return type === "null"; }
-      var objClass = Object.prototype.toString.call(obj).slice(8, -1);
+      var objClass = $.typeOf(obj);
       return objClass === type || objClass.toLowerCase() === type;
+    }
+  }
+
+  //noinspection JSAccessibilityCheck,JSUnresolvedVariable
+  if (typeof $.typeOf === "undefined")
+  {
+    /**
+     * returns the type of an object.
+     * @param {*} obj
+     * @return {String} class name [String|Number|Boolean|Date|Array|Object|Function|RegExp] OR undefined OR null
+     */
+    $.typeOf = function(obj)
+    {
+      if (obj === undefined) { return "undefined"; }
+      if (obj === null) { return "null"; }
+      return Object.prototype.toString.call(obj).slice(8, -1);
     }
   }
 
