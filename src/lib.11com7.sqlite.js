@@ -8,9 +8,9 @@
  *
  * @author Dominik Pesch <d.pesch@11com7.de>
  * @since 2012-09-30
- * @namespace jq.db
+ * @namespace jq
  */
-(function(/** jq */ $, window, undefined)
+(function(/** {jq} */ $, window, undefined)
 {
   "use strict";
 
@@ -73,7 +73,7 @@
 
 
   /**
-   * @namespace
+   * @namespace jq.db
    */
   $.db = {};
 
