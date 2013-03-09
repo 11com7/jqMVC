@@ -147,13 +147,6 @@ jq.DbUpdater = (function(/** jq */ $)
     this._runFuncs = [];
 
 
-
-    /**
-     * SQLTransaction for init and update functions.
-     * @type {?SQLTransaction}
-     */
-    this._tx = null;
-
     return this;
   }
 
@@ -269,7 +262,14 @@ jq.DbUpdater = (function(/** jq */ $)
             {
               if (results.rows.length > 0)
               {
-                self._prepareUpdateExecution.call(self, tx, results.rows.item(0).version);
+                if (results.rows.item(0).version > 0)
+                {
+                  self._prepareUpdateExecution.call(self, tx, results.rows.item(0).version);
+                }
+                else
+                {
+                  self._prepareInitExecution.call(self, tx);
+                }
               }
               // error corrupt version table => try init
               else
@@ -294,7 +294,7 @@ jq.DbUpdater = (function(/** jq */ $)
               // ERROR
               else
               {
-                throw $.db.SqlError(error);
+                throw new Error($.db.SqlError(error));
               }
             });
         }
@@ -364,38 +364,11 @@ jq.DbUpdater = (function(/** jq */ $)
 
     _startExecution : function(readyCallback)
     {
-      var self = this;
-
       this._openDatabase();
-      this._database.transaction(
-        function(tx)
-        {
-          self._tx = tx;
-          self._nextExecution();
-        },
-        // ERROR
-        function(error)
-        {
-          if ($.isFunction(self._options.errorFunc))
-          {
-            self._options.errorFunc.call(null, error);
-          }
-          else
-          {
-            self.dbg("SQL-ERROR --- ROLL BACK!");
-            throw $.db.SqlError(error);
-          }
-        },
-        // SUCCESS
-        function(tx, results)
-        {
-          self._tx = null;
-          readyCallback.call(self, results);
-        }
-      );
+      this._nextExecution(readyCallback);
     },
 
-    _nextExecution : function()
+    _nextExecution : function(readyCallback)
     {
       // next one
       if (this._runFuncs.length)
@@ -406,19 +379,54 @@ jq.DbUpdater = (function(/** jq */ $)
 
         this.dbg("execute version: #" + version);
 
-        func.call(null, this._tx, version);
+        var self = this;
+        this._database.transaction(
+          function(tx)
+          {
+            func.call(null, tx, version);
+          },
+          // ERROR
+          function(error)
+          {
+            self.dbg("SQL-ERROR (Version " + version + ") --- ROLL BACK --- !");
 
-        if (version > 0)
-        {
-          this._insertVersion(this._tx, version);
-        }
+            if ($.isFunction(self._options.errorFunc))
+            {
+              self._options.errorFunc.call(null, error);
+            }
+            else
+            {
+              throw new Error($.db.SqlError(error));
+            }
+          },
+          // SUCCESS
+          function(tx, results)
+          {
+            self.dbg("Update installed (Version " + version + ")");
 
-        this._nextExecution();
+            if (version > 0)
+            {
+              this._insertVersion(this._tx, version);
+            }
+
+            // lastUpdateFunc??? ==> ready!
+            if (1 === self._runFuncs.length)
+            {
+              self.dbg("--> CALL READY");
+              readyCallback.call(self, results);
+            }
+            else
+            {
+              self.dbg("--> CALL NEXT UPDATE");
+              self._nextExecution(readyCallback);
+            }
+          }
+        );
       }
       // ready
       else
       {
-        // done
+        console.log("ELSE");
       }
     },
 
