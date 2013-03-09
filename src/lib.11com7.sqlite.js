@@ -144,7 +144,7 @@
       }
       catch (e)
       {
-        throw $.db.SqlError(e, "", "openDatabase('" + options.name + "', '" + options.version + "', '" + options.displayName + "', '" + options.databaseSize + "'");
+        throw new Error($.db.SqlError(e, "", "openDatabase('" + options.name + "', '" + options.version + "', '" + options.displayName + "', '" + options.databaseSize + "'"));
       }
     }
 
@@ -512,7 +512,7 @@
       // ERRORS
       function(err)
       {
-        throw $.db.SqlError(err, sql);
+        throw new Error($.db.SqlError(err, sql));
       },
       // success
       function()
@@ -720,13 +720,19 @@
    * (Factory) Creates a new Error/Exception object for a sql error.
    * This function will show the last sql statement, if $.db.executeSql() is used
    * @see $.db.executeSql()
-   * @param {SQLError|SQLException} errorObject
+   * @param {SQLError|SQLException|Error} errorObject
    * @param {String} [sql]
    * @param {String} [comment]
-   * @return {Error}
+   * @return {String}
    */
   $.db.SqlError = function(errorObject, sql, comment)
   {
+    // if there is no code entry this will be a »normal« exception
+    if (!!errorObject && !errorObject.code && errorObject.message)
+    {
+      return errorObject.message;
+    }
+
     sql = sql || "sqlLast: »" + sqlLast + "«";
     comment = comment || "";
 
@@ -734,7 +740,7 @@
       code = (!!errorObject && !!errorObject.code) ? errorObject.code : -424242,
       msg = (!!errorObject && !!errorObject.message) ? errorObject.message : "?unknown?";
 
-    return new Error("SQL ERROR #" + code + ": " + msg + " in '" + sql + "' --- " + comment);
+    return "SQL ERROR #" + code + ": " + msg + " in '" + sql + "' --- " + comment;
   };
 
 
@@ -842,7 +848,7 @@
       },
       function(error)
       {
-        throw $.db.SqlError(error);
+        throw new Error($.db.SqlError(error));
       });
 
       return;
@@ -877,7 +883,7 @@
       // ERROR
       function(tx, error)
       {
-        throw $.db.SqlError(error);
+        throw new Error($.db.SqlError(error));
       }
     );
 
