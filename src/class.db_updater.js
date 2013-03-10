@@ -147,6 +147,19 @@ jq.DbUpdater = (function(/** jq */ $)
     this._runFuncs = [];
 
 
+    /**
+     * Max number of functions to execute (init|update + ready funcs).
+     * @type {Number}
+     */
+    this._runFuncsMax = 0;
+
+    /**
+     * Tick/value for progress events.
+     * @type {Number}
+     */
+    this._runTick = 0;
+
+
     return this;
   }
 
@@ -264,11 +277,11 @@ jq.DbUpdater = (function(/** jq */ $)
               {
                 if (results.rows.item(0).version > 0)
                 {
-                  self._prepareUpdateExecution.call(self, tx, results.rows.item(0).version);
+                  self._prepareUpdateExecution.call(self, results.rows.item(0).version);
                 }
                 else
                 {
-                  self._prepareInitExecution.call(self, tx);
+                  self._prepareInitExecution.call(self);
                 }
               }
               // error corrupt version table => try init
@@ -276,7 +289,7 @@ jq.DbUpdater = (function(/** jq */ $)
               {
                 self.dbg("CORRUPT VERSION TABLE --> TRY RE-INIT");
                 sql = "DROP TABLE " + self._options.versionTable;
-                $.db.executeSql(tx, sql, self._prepareInitExecution.call(self, tx));
+                $.db.executeSql(tx, sql, self._prepareInitExecution.call(self));
               }
             },
             /**
@@ -289,7 +302,7 @@ jq.DbUpdater = (function(/** jq */ $)
               // ==> INIT
               if (error.message.toLowerCase().indexOf("no such table") > -1)
               {
-                self._prepareInitExecution.call(self, tx);
+                self._prepareInitExecution.call(self);
               }
               // ERROR
               else
@@ -304,7 +317,7 @@ jq.DbUpdater = (function(/** jq */ $)
     },
 
 
-    _prepareInitExecution : function(tx)
+    _prepareInitExecution : function()
     {
       var self = this;
 
@@ -324,19 +337,16 @@ jq.DbUpdater = (function(/** jq */ $)
       });
 
       this._prepareExecution.call(this, 0, this._initFuncs);
-      this._startExecution(function(tx)
-      {
-        console.log(arguments, "INIT FERTIG");
-      });
+      this._startExecution( $.proxy(this._prepareReadyCallbacks, this) );
     },
 
 
-    _prepareUpdateExecution : function(tx, version)
+    _prepareUpdateExecution : function(version)
     {
       this.dbg("found version number", version, "=> type UPDATE");
       this._type = TYPE_UPDATE;
       this._prepareExecution.call(this, version, this._updateFuncs);
-      this._startExecution(function() { console.log(arguments, "UPDATE FERTIG"); });
+      this._startExecution( $.proxy(this._prepareReadyCallbacks, this) );
     },
 
 
@@ -360,11 +370,20 @@ jq.DbUpdater = (function(/** jq */ $)
           stack.push(functions[t]);
         }
       }
+
+      // calc max only the first time
+      if (this._runFuncsMax === 0)
+      {
+        this._runFuncsMax = stack.length + this._readyFuncs.length;
+      }
     },
 
     _startExecution : function(readyCallback)
     {
       this._openDatabase();
+
+      $.trigger(this, EVENT_EXECUTE);
+
       this._nextExecution(readyCallback);
     },
 
@@ -383,6 +402,7 @@ jq.DbUpdater = (function(/** jq */ $)
         this._database.transaction(
           function(tx)
           {
+            $.trigger(self, EVENT_PROGRESS, [{ "value" : ++self._runTick,  "max" : self._runFuncsMax }]);
             func.call(null, tx, version);
           },
           // ERROR
@@ -410,26 +430,26 @@ jq.DbUpdater = (function(/** jq */ $)
             }
 
             // lastUpdateFunc??? ==> ready!
-            if (1 === self._runFuncs.length)
+            if (0 === self._runFuncs.length)
             {
-              self.dbg("--> CALL READY");
+              self.dbg("--> EXECUTE READY");
               readyCallback.call(self, results);
             }
             else
             {
-              self.dbg("--> CALL NEXT UPDATE");
+              self.dbg("--> EXECUTE NEXT UPDATE");
               self._nextExecution(readyCallback);
             }
           }
         );
       }
-      // ready
+      // nothing to do!
       else
       {
-        console.log("ELSE");
+        this.dbg("NOTHING TODO --> EXECUTE READY");
+        readyCallback.call(this, null);
       }
     },
-
 
 
     _insertVersion : function(tx, version)
@@ -438,6 +458,29 @@ jq.DbUpdater = (function(/** jq */ $)
       var sql = "INSERT INTO " + this._options.versionTable + " (version) VALUES (?)";
       //noinspection JSValidateTypes
       $.db.executeSql(tx, sql, [version]);
+    },
+
+
+    // --------------------------------------------------------------------------------
+    // READY CALLBACKS
+    // --------------------------------------------------------------------------------
+    _prepareReadyCallbacks : function()
+    {
+      if (this._status >= STATUS_READY)  { throw new Error("DbUpdater already done!"); }
+
+      this.dbg("==> READY --> call ready functions");
+      this._status = STATUS_READY;
+      $.trigger(this, EVENT_READY);
+
+      this._prepareExecution(0, this._readyFuncs);
+
+      var self = this;
+      this._nextExecution(function()
+      {
+        self.dbg("==> DONE!");
+        $.trigger(self, EVENT_DONE);
+        self._status = STATUS_DONE;
+      });
     },
 
 
