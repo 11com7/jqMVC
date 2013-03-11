@@ -474,9 +474,12 @@
   /**
    * Initialize database – has to be called after configuration.
    * @param {SQLTransaction} [tx] used only for opened databases
+   * @param {Boolean} [forceReInit] if this will be set to TRUE, initialized will be reset to false and the init process restarts
    */
-  $.db.initDb = function(tx)
+  $.db.initDb = function(tx, forceReInit)
   {
+    if (forceReInit === true)  { initialized = false };
+
     if (initialized)  { return; }
 
     if (!$.db.isOpen())
