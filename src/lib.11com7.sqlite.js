@@ -62,7 +62,7 @@
       TEXT : "STRFTIME('%Y-%m-%d %H:%M:%S', ?)", // <-- 'NOW' needs here an additional modifier ", LOCALTIME"
       NUMERIC : "STRFTIME('%J', ?)"
     },
-    timeConverter = {
+    db2dateConverter = {
       INTEGER : function(seconds) { return seconds != 0 ? new Date(seconds*1000) : parseInt(seconds, 10);},
       // Safari needs some help (YYYY/MM/DD instead of YYYY-MM-DD)
       TEXT : function(dtstring) { return new Date(dtstring.replace(/-/g,"/")); },
@@ -1002,16 +1002,16 @@
    * @param {String} [timestampType]
    * @return {Date} if timestampType didn't match the return will be an "Invalid Date"!
    */
-  $.db.convertDate = function(dbValue, timestampType)
+  $.db.db2date = function(dbValue, timestampType)
   {
     if (dbValue === null) { return null; }
 
     timestampType = timestampType || options.timestamp_type;
     var dtType = $.db.getTypeAffinity(timestampType);
 
-    if (timeConverter.hasOwnProperty(dtType))
+    if (db2dateConverter.hasOwnProperty(dtType))
     {
-      return timeConverter[dtType](dbValue);
+      return db2dateConverter[dtType](dbValue);
     }
     else
     {
