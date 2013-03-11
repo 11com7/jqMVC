@@ -864,12 +864,15 @@
       function(tx, results)
       {
         // ignore this entities
-        var ignoreNames =
-        {
-          "__WebKitDatabaseInfoTable__" : true,
-          "sqlite_autoindex___WebKitDatabaseInfoTable___1" : true,
-          "sqlite_sequence" : true
-        };
+        var
+          ignoreNames =
+          {
+            "__WebKitDatabaseInfoTable__" : true,
+            "sqlite_autoindex___WebKitDatabaseInfoTable___1" : true,
+            "sqlite_sequence" : true
+          },
+          sqliteSequenceExists = false
+          ;
 
         // delete all table, trigger, indexes, views (ignore the entities above)
         for (var t = 0; t < results.rows.length; t++)
@@ -879,9 +882,20 @@
           {
             $.db.executeSql(tx, "DROP " + results.rows.item(t).type + " IF EXISTS " + name);
           }
+          else if(name === "sqlite_sequence")
+          {
+            sqliteSequenceExists = true;
+          }
         }
 
-        $.db.executeSql(tx, "DELETE FROM sqlite_sequence", [], readyCallback); // delete all auto ids
+        if (sqliteSequenceExists)
+        {
+          $.db.executeSql(tx, "DELETE FROM sqlite_sequence", [], readyCallback); // delete all auto ids
+        }
+        else
+        {
+          $.db.executeSql(tx, "SELECT null", [], readyCallback);
+        }
       },
       // ERROR
       function(tx, error)
