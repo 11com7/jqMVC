@@ -404,7 +404,7 @@
 
       if ($.db.getOptions('debug') && console && console.log)
       {
-        console.log("DbQuery->executeInTransaction", this.getSql(), this.getValues());
+        console.log("DbQuery->executeInTransaction '" + this.getSql() + "'", this.getValues());
       }
 
       //noinspection JSValidateTypes
