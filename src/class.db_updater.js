@@ -160,6 +160,13 @@ jq.DbUpdater = (function(/** jq */ $)
     this._runTick = 0;
 
 
+    this._db.addTable(this._options.versionTable,
+      [
+        ["version", "INTEGER", "NOT NULL UNIQUE"],
+        ["dt_create"]
+      ]
+    );
+
     return this;
   }
 
@@ -323,13 +330,6 @@ jq.DbUpdater = (function(/** jq */ $)
 
       this.dbg("no version table '" + self._options.versionTable + "' found => type INIT");
       this._type = TYPE_INIT;
-
-      $.db.addTable(this._options.versionTable,
-        [
-          ["version", "INTEGER", "NOT NULL UNIQUE"],
-          ["dt_create"]
-        ]
-      );
 
       this.addInitFunction(function(tx)
       {
