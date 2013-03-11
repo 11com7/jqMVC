@@ -841,7 +841,7 @@
    * As there isn't a way to drop the database with JavaScript, this function is just a polyfill.
    * @param {SQLTransaction} [tx] the functions creates a SQLTransaction if necessary
    */
-  $.db.dropDatabase = function(tx)
+  $.db.dropDatabase = function(tx, readyCallback)
   {
     if (!tx || !tx.executeSql || typeof tx === "undefined")
     {
@@ -881,7 +881,7 @@
           }
         }
 
-        $.db.executeSql(tx, "DELETE FROM sqlite_sequence"); // delete all auto ids
+        $.db.executeSql(tx, "DELETE FROM sqlite_sequence", [], readyCallback); // delete all auto ids
       },
       // ERROR
       function(tx, error)
