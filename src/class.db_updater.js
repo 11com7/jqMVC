@@ -426,7 +426,7 @@ jq.DbUpdater = (function(/** jq */ $)
 
             if (version > 0)
             {
-              this._insertVersion(this._tx, version);
+              self._insertVersion(tx, version);
             }
 
             // lastUpdateFunc??? ==> ready!
