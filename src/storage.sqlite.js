@@ -65,18 +65,18 @@ var SqliteStorageAdapter = (function($)
      */
     save : function(obj, callback)
     {
-      var db,
-        tableName = obj.getTableName(),
-        sql = "",
-        columns,
-        values,
-        id = Math.max(0, obj.id || 0),
-        isNew = (0 === id),
-        self = this
-        ;
-
       try
       {
+        var db,
+          tableName = obj.getTableName(),
+          sql = "",
+          columns,
+          values,
+          id = Math.max(0, obj.id || 0),
+          isNew = (0 === id),
+          self = this
+          ;
+
         db = $.db.open();
 
         _checkTableName(tableName);
@@ -88,6 +88,11 @@ var SqliteStorageAdapter = (function($)
           // QUERY
           function(tx) {
             self._saveExecuteSql(tx, obj, sql, values, isNew);
+
+            if (obj.__save && $.isFunction(obj.__save))
+            {
+              obj.__save.call(obj, tx);
+            }
           },
           // ERROR
           function(err) {

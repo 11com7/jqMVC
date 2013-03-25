@@ -34,6 +34,7 @@
     this.__init = undefined;
     this.__wakeup = undefined;
     this.__sleep = undefined;
+    this.__save = undefined;
 
     $.mvc.model.apply(this, arguments);
     this.tableName = opts.tableName || this.modelName;
