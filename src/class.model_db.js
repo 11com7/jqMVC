@@ -31,11 +31,17 @@
   {
     this.id = 0;
     this.tableName = undefined;
+    this.__init = undefined;
     this.__wakeup = undefined;
     this.__sleep = undefined;
 
     $.mvc.model.apply(this, arguments);
     this.tableName = opts.tableName || this.modelName;
+
+    if (this.__init && $.isFunction(this.__init))
+    {
+      this.__init.apply(this);
+    }
   };
 
   //noinspection JSCheckFunctionSignatures
