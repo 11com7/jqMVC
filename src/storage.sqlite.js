@@ -88,11 +88,6 @@ var SqliteStorageAdapter = (function($)
           // QUERY
           function(tx) {
             self._saveExecuteSql(tx, obj, sql, values, isNew);
-
-            if (obj.__save && $.isFunction(obj.__save))
-            {
-              obj.__save.call(obj, tx);
-            }
           },
           // ERROR
           function(err) {
@@ -176,6 +171,11 @@ var SqliteStorageAdapter = (function($)
         if (isNew)
         {
           obj.id = results.insertId;
+        }
+
+        if (obj.__save && $.isFunction(obj.__save))
+        {
+          obj.__save.call(obj, tx);
         }
       });
     },
