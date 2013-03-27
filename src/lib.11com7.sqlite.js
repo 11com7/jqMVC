@@ -58,7 +58,7 @@
 
     // Timestamp templates
     timestampTpl = {
-      INTEGER : "STRFTIME('%s', ?)",
+      INTEGER : "MAX(0, 1*STRFTIME('%s', ?))", // <-- preserve 0-value as 0 BUT only for dates since 1970-01-01
       TEXT : "STRFTIME('%Y-%m-%d %H:%M:%S', ?)", // <-- 'NOW' needs here an additional modifier ", LOCALTIME"
       NUMERIC : "STRFTIME('%J', ?)"
     },
@@ -981,10 +981,12 @@
   {
     var type = $.typeOf(data);
 
+    console.log(data, type);
+
     if (type === "Array")
     {
       //noinspection JSUnresolvedFunction
-      return data.map($.db.prepareData );
+      return data.map( $.db.prepareData );
     }
     else if (type === "Date")
     {

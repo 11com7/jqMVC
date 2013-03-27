@@ -115,24 +115,31 @@ var SqliteStorageAdapter = (function($)
      */
     _savePrepareSql : function(tableName, columns, isNew)
     {
-      var sql;
+      var
+        sql,
+        placeholder = $.db.getColumnPlaceholder(tableName, columns);
 
       // INSERT statement
       if (isNew)
       {
         sql = "INSERT INTO " + tableName +
           " (" + columns.join(", ") + ")" +
-          " VALUES (" + "?".repeat(columns.length, ", ") + ")"
+          " VALUES (" + placeholder.join(", ") + ")"
         ;
       }
       // UPDATE statement
       else
       {
-        sql = "UPDATE " + tableName + " SET " +
-          columns.join("=?, ") + "=?" +
-          " WHERE id=?"
+        var tuple = [];
+        sql = "UPDATE " + tableName + " SET ";
+
+        columns.forEach(function(col, t) { tuple.push(col + "=" + placeholder[t]); });
+
+        sql += tuple.join(", ") + " WHERE id=?"
         ;
       }
+
+      console.log(sql);
 
       return sql;
     },
@@ -148,8 +155,25 @@ var SqliteStorageAdapter = (function($)
     _savePrepareValues : function(obj, columns, id)
     {
       //noinspection JSUnresolvedFunction,JSUnresolvedVariable
-      var values = $.values((obj.__sleep && $.isFunction(obj.__sleep)) ? obj.__sleep.call(obj) : obj, columns);
-      if (id != 0)  { values.push(id); }
+      var
+        values = $.values(obj, columns),
+        tableName = obj.getTableName();
+
+
+      if (obj.__sleep && $.isFunction(obj.__sleep)) {
+        var newValues = obj.__sleep.call(obj);
+        if ($.isObject(newValues)) {
+          values = $.values(newValues, columns);
+        }
+      }
+
+      values = $.db.prepareData(values);
+
+      console.log("preparedValues", values);
+
+      if (id != 0) {
+        values.push(id);
+      }
 
       return values;
     },
