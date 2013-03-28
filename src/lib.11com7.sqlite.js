@@ -305,7 +305,6 @@
       }
     });
 
-
     tables[tableName].constraints = tableConstraints;
   };
 
@@ -981,8 +980,6 @@
   {
     var type = $.typeOf(data);
 
-    console.log(data, type);
-
     if (type === "Array")
     {
       //noinspection JSUnresolvedFunction
@@ -1072,6 +1069,20 @@
     return $.db.getTypeAffinity(_isDateType(colType) ? options.timestamp_type : colType);
   };
 
+
+  /**
+   * Returns TRUE if tableName.column is defined as date/time column.
+   * @param {String} tableName !must exists!
+   * @param {String} column !must exists!
+   * @returns {Boolean} TRUE if tableName.column is defined as date/time column; else FALSE
+   */
+  $.db.isDateColumn = function(tableName, column)
+  {
+    return (column == options.timestamp_create)
+      || (column == options.timestamp_change)
+      || _isDateType( $.db.getColumnType(tableName, column) );
+  };
+
   /**
    * @param {String} colType has to be UPPERCASE
    * @return {Boolean} TRUE if colType contains DATE or TIME
@@ -1080,7 +1091,7 @@
   function _isDateType(colType)
   {
     return (colType.indexOf("DATE") > -1 || colType.indexOf("TIME") > 0)
-  }
+  };
 
 
   // ===================================================================================================================

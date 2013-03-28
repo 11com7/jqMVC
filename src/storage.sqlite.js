@@ -243,7 +243,8 @@ var SqliteStorageAdapter = (function($)
         db,
         tableName = obj.getTableName(),
         sql = "",
-        columns
+        columns,
+        self = this
         ;
 
 
@@ -268,6 +269,8 @@ var SqliteStorageAdapter = (function($)
               {
                 el = $.extend({}, obj, results.rows.item(0));
 
+                self._autoConvertDates.call(self, el, tableName, columns);
+
                 if (el.__wakeup && $.isFunction(el.__wakeup))
                 {
                   el = el.__wakeup.call(el);
@@ -287,6 +290,25 @@ var SqliteStorageAdapter = (function($)
       {
         throw $.db.SqlError(err, sql);
       }
+    },
+
+    /**
+     * (internal) Converts DATE columns to JS date objects, if they are unequal 0 or NULL.
+     * @param {jq.mvc.modelDb} obj
+     * @param {String} tableName
+     * @param {Array[String]} columns
+     */
+    _autoConvertDates : function(obj, tableName, columns)
+    {
+      columns.forEach(function(col)
+      {
+        if ($.db.isDateColumn(tableName, col) && obj.hasOwnProperty(col) && obj[col] !== 0 && obj[col] !== null)
+        {
+          var oldVal = obj[col];
+
+          obj[col] = $.db.db2date(obj[col]);
+        }
+      });
     },
 
 
@@ -327,6 +349,9 @@ var SqliteStorageAdapter = (function($)
             for (var t = 0; t < results.rows.length; t++)
             {
               var el = $.extend({}, obj, results.rows.item(t));
+
+              self._autoConvertDates.call(self, el, db, tableName, columns);
+
               all.push(hasWakeUp ? el.__wakeup.call(el) : el);
             }
 
@@ -402,7 +427,8 @@ var SqliteStorageAdapter = (function($)
     search:function(obj, search, callback, errorCallback)
     {
       var
-        query = this._prepareDbQuery(obj);
+        query = this._prepareDbQuery(obj),
+        self = this;
 
       try
       {
@@ -419,12 +445,18 @@ var SqliteStorageAdapter = (function($)
       {
         if (callback && $.isFunction(callback))
         {
-          var all = [],
+          var
+            all = [],
+            tableName = obj.getTableName(),
+            columns = query.getSearchColumns(search),
             hasWakeUp = (obj && obj.__wakeup && $.isFunction(obj.__wakeup));
 
           for (var t=0; t < results.rows.length; t++)
           {
             var el = $.extend({}, obj, results.rows.item(t));
+
+            self._autoConvertDates.call(self, el, tableName, columns);
+
             all.push(hasWakeUp ? el.__wakeup.call(el) : el);
           }
 

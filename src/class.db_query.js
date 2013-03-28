@@ -461,7 +461,16 @@
       return new $.SqlClause(this.getSql(), this.getValues());
     },
 
-
+    /**
+     * Returns the return columns for a search object.
+     * @param {Object} search
+     * @returns {Array}
+     */
+    getSearchColumns : function(search)
+    {
+      var searchColumns = (search && search.hasOwnProperty("columns")) ? search.columns : null;
+      return this._searchPrepareReturnColumns(searchColumns);
+    },
 
     // ================================================================================================================
     // build sql helper
@@ -480,7 +489,7 @@
 
       if ($.isObject(columns) && columns.columns) { columns = columns.columns; }
 
-      columns.map(function(column)
+      columns.forEach(function(column)
       {
         returnColumns.push( (column instanceof $.SqlClause) ? column.get() : column );
       });
