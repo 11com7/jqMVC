@@ -322,52 +322,7 @@ var SqliteStorageAdapter = (function($)
      * @param {jq.mvc.modelDb} obj empty model object
      */
     getAll:function(type, callback, obj){
-      //noinspection JSUnresolvedVariable
-      var
-        db,
-        tableName = obj.getTableName(),
-        sql = "",
-        columns,
-        all = [],
-        hasWakeUp = (obj && obj.__wakeup && $.isFunction(obj.__wakeup))
-        ;
-
-
-      try
-      {
-        db = $.db.open();
-
-        _checkTableName(tableName);
-        columns = $.db.getColumns(tableName);
-
-        sql = "SELECT " + columns.join(", ") + " FROM " + tableName;
-
-        db.transaction(function(tx)
-        {
-          $.db.executeSql(tx, sql, [], function(tx, results)
-          {
-            for (var t = 0; t < results.rows.length; t++)
-            {
-              var el = $.extend({}, obj, results.rows.item(t));
-
-              self._autoConvertDates.call(self, el, db, tableName, columns);
-
-              all.push(hasWakeUp ? el.__wakeup.call(el) : el);
-            }
-
-            return (callback && $.isFunction(callback)) ? callback(all) : all;
-          });
-        },
-        // ERROR
-        function(err)
-        {
-          throw $.db.SqlError(err, sql);
-        });
-      }
-      catch (err)
-      {
-        throw $.db.SqlError(err, sql);
-      }
+      this.search(obj, { filter: [] }, callback);
     },
 
 
