@@ -139,8 +139,6 @@ var SqliteStorageAdapter = (function($)
         ;
       }
 
-      console.log(sql);
-
       return sql;
     },
 
@@ -168,8 +166,6 @@ var SqliteStorageAdapter = (function($)
       }
 
       values = $.db.prepareData(values);
-
-      console.log("preparedValues", values);
 
       if (id != 0) {
         values.push(id);
