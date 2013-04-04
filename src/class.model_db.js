@@ -46,8 +46,9 @@
   };
 
   //noinspection JSCheckFunctionSignatures
-  $.mvc.modelDb.prototype = new $.mvc.model;
+  $.mvc.modelDb.prototype = new $.mvc.model();
   $.mvc.modelDb.prototype.constructor = $.mvc.modelDb;
+  $.mvc.modelDb.prototype.SUPER = $.mvc.modelDb.prototype;
 
   /**
    * Loads entry with id and returns model object OR null (= not found!).
