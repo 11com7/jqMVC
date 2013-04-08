@@ -812,8 +812,9 @@
     var asTmp = [], placeholders = [], placeholder;
     for (var t=0; t < columns.length; t++)
     {
-      asTmp.push("? as " + columns[t]);
-      placeholders.push("?");
+      placeholder = $.db.getColumnPlaceholder(tableName, columns[t]);
+      asTmp.push(placeholder + " as " + columns[t]);
+      placeholders.push(placeholder);
     }
 
     sql += " SELECT " + asTmp.join(",");
