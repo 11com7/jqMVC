@@ -68,7 +68,8 @@
       TEXT : function(dtstring) { return new Date(dtstring.replace(/-/g,"/")); },
       // Julian Date: unix epoch = 2440587.5 JD + sqlite assumes each day as "[...] exactly 86400 seconds [...]" (see http://www.sqlite.org/lang_datefunc.html)
       NUMERIC : function(juldate) { return new Date((juldate - 2440587.5) * 86400.0 * 1000); }
-    }
+    },
+    readyCallbacks = []
     ;
 
 
@@ -171,6 +172,41 @@
   $.db.isOpen = function ()
   {
     return !!database;
+  };
+
+
+  /**
+   * Fügt Callback-Funktion hinzu, die entweder nach dem Öffnen der Datenbank ausgeführt werden ODER direkt, falls die Datenbank schon geöffnet ist.
+   * @param {function(Database)} callback
+   */
+  $.db.ready = function(callback)
+  {
+    if (!$.isFunction(callback)) { return; }
+
+    readyCallbacks.push(callback);
+
+    if ($.db.isOpen())
+    {
+      callback(database);
+    }
+    else
+    {
+      $(document).bind("SQL:open", _doDbOpen);
+    }
+
+    function _doDbOpen()
+    {
+      $(document).unbind("SQL:open", _doDbOpen);
+      $(document).bind("SQL:close", _doDbClose);
+
+      readyCallbacks.forEach(function(cbFunction) { cbFunction(database); });
+    }
+
+    function _doDbClose()
+    {
+      $(document).unbind("SQL:close", _doDbClose);
+      $(document).bind("SQL:open", _doDbOpen);
+    }
   };
 
 
