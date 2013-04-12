@@ -695,7 +695,7 @@
    * - auto debugging
    * - auto store last sql statement (for errors)
    *
-   * @param {?SQLTransaction} tx transaction object OR undefined for auto transaction
+   * @param {SQLTransaction|null} tx transaction object OR undefined for auto transaction
    * @param {string} sql
    * @param {Object|Array} [data]
    * @param {function(SQLTransaction, SQLResultSet)} [successCallback]
@@ -732,7 +732,7 @@
 
     /** @type {SQLTransaction} tx */
     sqlLast = sql;
-    if (options.debug) { $.db.dbg(sql, data); }
+    if (options.debug) { $.db.dbg((!!sql) ? sql.replace(/\%/g, "%%") : sql, data); }
     //noinspection JSValidateTypes
     tx.executeSql(sql, data, successCallback, errorCallback);
   };
