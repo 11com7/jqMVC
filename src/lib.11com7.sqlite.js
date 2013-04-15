@@ -46,6 +46,7 @@
     SQL_DT_CONSTRAINTS = "NOT NULL DEFAULT (" + SQL_DT_DEFAULT + ")",
     SQL_CREATE_TABLE = "CREATE TABLE IF NOT EXISTS <%=table%> (<%=fields%><%=constraints%>);",
     SQL_CREATE_INDEX = "CREATE<%=unique%> INDEX IF NOT EXISTS <%=name%> ON <%=table%> (<%=fields%>);",
+    SQL_CREATE_VIEW = "CREATE VIEW IF NOT EXISTS <%=name%> AS <%=select%>;",
     SQL_DROP_TABLE = "DROP TABLE IF EXISTS <%=table%>;",
     SQL_DROP_TRIGGER = "DROP TRIGGER IF EXISTS <%=trigger%>;",
     SQL_DROP_INDEX = "DROP INDEX IF EXISTS <%=index%>;",
@@ -77,6 +78,58 @@
    * @namespace jq.db
    */
   $.db = {};
+
+  // ===================================================================================================================
+  // OPEN / CLOSE
+  // ===================================================================================================================
+  /**
+   * Opens the database if necessary and returns the database object.
+   * @return {Database|Boolean}
+   */
+  $.db.open = function()
+  {
+    if (!$.db.isOpen())
+    {
+      _checkOptions();
+
+      try
+      {
+        database = window.openDatabase(options.name, options.version, options.displayName, options.databaseSize);
+        _trigger('SQL:open', database);
+        if (!!options.autoInit) { _initDb(); }
+      }
+      catch (e)
+      {
+        throw new Error($.db.SqlError(e, "", "openDatabase('" + options.name + "', '" + options.version + "', '" + options.displayName + "', '" + options.databaseSize + "'"));
+      }
+    }
+
+    return database;
+  };
+
+  /**
+   * Close the database if opened.
+   */
+  $.db.close = function()
+  {
+    if ($.db.isOpen())
+    {
+      database.close();
+      database = null;
+      _trigger("SQL:close");
+    }
+  };
+
+  /**
+   * Return TRUE if database is already opened; otherwise FALSE.
+   * @return {Boolean}
+   */
+  $.db.isOpen = function ()
+  {
+    return !!database;
+  };
+
+
 
   // ===================================================================================================================
   // OPTIONS
@@ -127,54 +180,10 @@
     return (key === undefined) ? options : (key && options[key]) ? options[key] : undefined;
   };
 
-  /**
-   * Opens the database if necessary and returns the database object.
-   * @return {Database|Boolean}
-   */
-  $.db.open = function()
-  {
-    if (!$.db.isOpen())
-    {
-      _checkOptions();
 
-      try
-      {
-        database = window.openDatabase(options.name, options.version, options.displayName, options.databaseSize);
-        _trigger('SQL:open', database);
-        if (!!options.autoInit) { _initDb(); }
-      }
-      catch (e)
-      {
-        throw new Error($.db.SqlError(e, "", "openDatabase('" + options.name + "', '" + options.version + "', '" + options.displayName + "', '" + options.databaseSize + "'"));
-      }
-    }
-
-    return database;
-  };
-
-  /**
-   * Close the database if opened.
-   */
-  $.db.close = function()
-  {
-    if ($.db.isOpen())
-    {
-      database.close();
-      database = null;
-      _trigger("SQL:close");
-    }
-  };
-
-  /**
-   * Return TRUE if database is already opened; otherwise FALSE.
-   * @return {Boolean}
-   */
-  $.db.isOpen = function ()
-  {
-    return !!database;
-  };
-
-
+  // ===================================================================================================================
+  // db.ready()
+  // ===================================================================================================================
   /**
    * Fügt Callback-Funktion hinzu, die entweder nach dem Öffnen der Datenbank ausgeführt werden ODER direkt, falls die Datenbank schon geöffnet ist.
    * @param {function(Database)} callback
@@ -210,6 +219,9 @@
   };
 
 
+  // ===================================================================================================================
+  // TABLE
+  // ===================================================================================================================
   /**
    * Adds (or overwrites) a table representation.
    * @param {String} tableName
@@ -345,6 +357,9 @@
   };
 
 
+  // ===================================================================================================================
+  // INDEX
+  // ===================================================================================================================
   /**
    * Adds (or overwrites) an index.
    * @param {String} indexName
@@ -380,6 +395,164 @@
   };
 
 
+  // ===================================================================================================================
+  // VIEW
+  // ===================================================================================================================
+  /**
+   * Adds (or overwrites) a view definition, from which a view will be generated.
+   * @param {String} viewName
+   * @param {Array} columns Array(name, null|type definition, view_alias [, view_column|SqlClause])
+   * @param {Object} tables {table_alias : entity_name}
+   * @param {Object} select {[select:...], from:..., [where:...], [group:...], [having:...], [order:...], [limit:...]}
+   */
+  $.db.addView = function(viewName, columns, tables, select)
+  {
+    if (!viewName) { throw new Error("missing or empty viewName"); }
+    if (!columns || !columns.length) { throw new Error("missing or empty column array"); }
+    if (!tables || !$.isObject(tables)) { throw new Error("missing tables object"); }
+    if (!select || !select.from) { throw new Error("missing or empty select object; needs minimal from definition"); }
+
+    views[viewName] =
+    {
+      "columns" : [],
+      "constraints" : [], // <-- always empty!
+      "tables" : $.extend({}, tables),
+      "select" : $.extend({}, select)
+    };
+
+    var viewObj = views[viewName];
+
+    $.db.setViewColumns(viewName, columns);
+
+    console.log(viewObj);
+    _createViewSelect(viewName);
+
+  };
+
+
+  /**
+   * @param {String} viewName
+   * @param {Array} columns Array(name, null|type definition, view_alias [, view_column|SqlClause])
+   */
+  $.db.setViewColumns = function(viewName, columns)
+  {
+    if (!viewName) { throw new TypeError("missing or empty viewName"); }
+    if (!$.db.isView(viewName)) { throw new TypeError("unknown viewName '" + viewName + "'"); }
+    if (!$.isArray(columns))  { throw new TypeError("columns has to be an array instead of (" + $.typeOf(columnsl) + ")"); }
+
+
+    if ($.isArray(columns) && columns.length > 2 && columns.length < 5 && !$.isArray(columns[0]))
+    {
+      columns = [ columns ];
+    }
+
+    // [ name, null|type definition, view_alias [, view_column|SqlClause] ]
+    for (var t=0; t < columns.length; t++)
+    {
+      var foreignEntity, colType,
+        alias = columns[t][2],
+        col = columns[t][0], 
+        foreignCol = (!!columns[t][3]) ? columns[t][3] : col;
+
+
+      // FIND FOREIGN ENTITY
+      if (!alias)
+      {
+        throw new TypeError("Missing/empty table alias for " + viewName + "." + col);
+      }
+
+      // table alias?
+      if (alias in views[viewName].tables)
+      {
+        foreignEntity = _viewAlias2Entity(viewName, alias);
+      }
+      else
+      {
+        throw new TypeError("unknown entity alias '" + alias + "' for " + viewName + "." + col);
+      }
+      
+      
+      // CHECK FOREIGN COLUMN
+      if (!$.db.columnExists(foreignEntity, foreignCol))
+      {
+        throw new TypeError("missing foreign column '" + foreignEntity + "'.'" + foreignCol + "' for " + viewName + "." + col);
+      }
+
+
+      // FIND TYPE DEFINITIONS
+      if (!columns[t][1])
+      {
+        colType = _getColumnData(foreignEntity, foreignCol, "type");
+      }
+      else if ($.is("String", columns[t][1]))
+      {
+        colType = columns[t][1];
+      }
+      else
+      {
+        throw new TypeError("unknown column type definition '" + columns[t][1] + "' for " + viewName + "." + col);
+      }
+
+
+      columns[t] = [col, colType, alias, foreignCol];
+      var pos = _getColumnIndex(viewName, col);
+      // replace column
+      if (pos !== -1)
+      {
+        views[viewName].columns[pos] = columns[t];
+      }
+      // add column
+      else
+      {
+        views[viewName].columns.push(columns[t]);
+      }
+    }
+  }
+
+
+  /**
+   * (internal) Returns an entity name (table or view) for an alias.
+   * @param {String}viewName existing view
+   * @param {String} alias existing entity alias
+   * @returns {String}
+   */
+  function _viewAlias2Entity(viewName, alias)
+  {
+    return views[viewName].tables[alias];
+  }
+
+  /**
+   * @param {String}viewName existing view
+   */
+  function _createViewSelect(viewName)
+  {
+    if (!viewName) { throw new TypeError("missing or empty viewName"); }
+    if (!$.db.isView(viewName)) { throw new TypeError("unknown viewName '" + viewName + "'"); }
+
+    var sql = "SELECT", t,
+      view = views[viewName],
+      columns = [],
+      tables = [],
+      select = [];
+
+
+    for (t = 0; t < view.columns.length; t++)
+    {
+      var col = view.columns[t];
+      columns.push(col[2] + "." + col[3] + (col[0] != col[3] ? " AS " + col[0] : ""));
+    }
+
+    sql += " " + columns.join(", ")
+
+    console.log(sql);
+
+
+  }
+
+
+  // ===================================================================================================================
+  // GETTER / PUBLIC HELPER
+  // ===================================================================================================================
   /**
    * Returns an array of all table names or the definitions (object) for one table, if tableName is an existing table; otherwise undefined.
    * @param {String} [tableName]
@@ -388,6 +561,42 @@
   $.db.getTables = function(tableName)
   {
     return (!tableName) ? Object.keys(tables) : ($.db.tableExists(tableName)) ? tables[tableName] : undefined;
+  };
+
+  /**
+   * Returns an array of all table names or the definitions (object) for one table, if viewName is an existing table; otherwise undefined.
+   * @param {String} [viewName]
+   * @return {Array|Object|undefined}
+   */
+  $.db.getViews = function(viewName)
+  {
+    return (!viewName) ? Object.keys(views) : ($.db.tableExists(viewName)) ? views[viewName] : undefined;
+  };
+
+  /**
+   * Returns an array of all tables and views OR the definitions (object) for a table or view OR undefined if unknown.
+   * @param {String} [entityName]
+   * @returns {Array|Object|undefined}
+   */
+  $.db.getEntities = function(entityName)
+  {
+    if (!entityName)
+    {
+      return Object.keys(tables).concat(Object.keys(views));
+    }
+    else
+    {
+      if ($.db.isTable(entityName))
+      {
+        return tables[entityName];
+      }
+      else if ($.db.isView(entityName))
+      {
+        return views[entityName];
+      }
+    }
+
+    return undefined;
   };
 
   /**
@@ -447,43 +656,99 @@
   };
 
   /**
-   * Returns TRUE if the table is added/defined; otherwise FALSE.
+   * Returns TRUE if the tableName is a defined table; otherwise FALSE.
    * @param {String} tableName
    * @return {Boolean}
+   * @see $.db.tableExists()
    */
-  $.db.tableExists = function(tableName)
+  $.db.isTable = function(tableName)
   {
-    return (tableName && tables[tableName]);
+    return $.db.tableExists(tableName, true);
   };
 
   /**
-   * Returns TRUE if the column (and table) is added/defined; otherwise FALSE.
+   * Returns TRUE if the viewName is a defined view; otherwise FALSE.
+   * @param {String} viewName
+   * @return {Boolean}
+   * @see $.db.tableExists()
+   */
+  $.db.isView = function(viewName)
+  {
+    return (viewName && views[viewName]);
+  };
+
+  /**
+   * Returns TRUE if the entityName (table OR view) is a defined view; otherwise FALSE.
+   * @param {String} entityName
+   * @return {Boolean}
+   * @see $.db.tableExists()
+   */
+  $.db.isEntity = function(entityName)
+  {
+    return $.db.tableExists(tableName);
+  };
+
+  /**
+   * Returns TRUE if the table (or view) is added/defined; otherwise FALSE.
    * @param {String} tableName
+   * @param {boolean} [strict] if TRUE it will only return true for tables; default: false
+   * @return {Boolean}
+   * @see $.db.isTable()
+   */
+  $.db.tableExists = function(tableName, strict)
+  {
+    return (tableName && (tables[tableName] || (!strict && views[tableName])));
+  };
+
+  /**
+   * Returns TRUE if the table is added/defined; otherwise FALSE.
+   * @param {String} viewName
+   * @return {Boolean}
+   */
+  $.db.viewExists = function(viewName)
+  {
+    return (viewName && views[viewName]);
+  };
+
+
+ /**
+   * Returns TRUE if the entity (table or view) is added/defined; otherwise FALSE.
+   * @param {String} entityName
+   * @return {Boolean}
+   */
+  $.db.entityExists = function(entityName)
+  {
+    return $.db.tableExists(entityName);
+  };
+
+  /**
+   * Returns TRUE if the column (and table or view) is added/defined; otherwise FALSE.
+   * @param {String} entityName
    * @param {String} column
    * @return {Boolean}
    */
-  $.db.columnExists = function(tableName, column)
+  $.db.columnExists = function(entityName, column)
   {
-    return ($.db.tableExists(tableName) && column && _getColumnIndex(tableName, column) > -1);
+    return ($.db.entityExists(entityName) && column && _getColumnIndex(entityName, column) > -1);
   };
 
 
   /**
-   * Checks an array with column names for a defined table and throws Error on non-defined columns.
-   * @param {String} tableName
+   * Checks an array with column names for a defined table (or view) and throws Error on non-defined columns.
+   * @param {String} entityName
    * @param {Array} columns
    * @throws Error
    */
-  $.db.checkColumns = function(tableName, columns)
+  $.db.checkColumns = function(entityName, columns)
   {
-    if (!tableName) { throw new Error("missing tableName"); }
-    if (!$.db.tableExists(tableName)) { throw new Error("tableName '" + tableName + "' isn't added/defined."); }
+    if (!entityName) { throw new Error("missing tableName"); }
+    if (!$.db.entityExists(entityName)) { throw new Error("tableName '" + entityName + "' isn't added/defined."); }
     if (!columns || !$.isArray(columns)) { throw new Error("columns is '" + (typeof columns) + "' instead of an array"); }
 
     var lastCol=null;
-    if (!columns.every(function(col) { lastCol = col; return $.db.columnExists(tableName, col); }))
+    if (!columns.every(function(col) { lastCol = col; return $.db.columnExists(entityName, col); }))
     {
-      throw new Error("column '" + lastCol + "' doesn't exists in '" + tableName + "'");
+      throw new Error("column '" + lastCol + "' doesn't exists in '" + entityName + "'");
     }
   };
 
@@ -646,6 +911,25 @@
     }
 
     sql = $.template(SQL_CREATE_INDEX, {'name' : index, 'unique' : indexes[index].unique, 'table' : indexes[index].table, 'fields' : indexes[index].columns.join(", ") });
+    $.db.executeSql(tx, sql);
+  };
+
+  /**
+   * Creates a view in the database.
+   * @param {SQLTransaction} tx transaction object
+   * @param {String} name viewName
+   */
+  $.db.createView = function(tx, name)
+  {
+    var sql;
+
+    if (!!options.dropOnInit)
+    {
+      sql = $.template(SQL_DROP_VIEW, {'view' : name});
+      $.db.executeSql(tx, sql);
+    }
+
+    sql = $.template(SQL_CREATE_VIEW, {'name' : name, 'select' : _createViewSelect(name)});
     $.db.executeSql(tx, sql);
   };
 
@@ -1194,31 +1478,31 @@
   // ===================================================================================================================
   /**
    * Returns the array index of columnName in table columns OR -1 if columnName not exists.
-   * @param {String} tableName !must exist!
+   * @param {String} entityName !must exist!
    * @param {String} columnName
    * @return {Number}
    * @private
    */
-  function _getColumnIndex(tableName, columnName)
+  function _getColumnIndex(entityName, columnName)
   {
-    var columns = _getColumnNames(tableName);
+    var columns = _getColumnNames(entityName);
     //noinspection JSValidateTypes
     return (columns.length) ? columns.indexOf(columnName) : -1;
   }
 
 
   /**
-   * Returns an array with column names for a table.
-   * @param tableName !must exist!
+   * Returns an array with column names for a table or view.
+   * @param entityName !must exist!
    * @return {Array}
    * @private
    */
-  function _getColumnNames(tableName)
+  function _getColumnNames(entityName)
   {
-    var columns = [];
-    for (var t=0; t < tables[tableName].columns.length; t++)
+    var columns = [], entity = $.db.isTable(entityName) ? tables : views;
+    for (var t=0; t < entity[entityName].columns.length; t++)
     {
-      columns.push(_getColumnData(tableName, t, 0));
+      columns.push(_getColumnData(entityName, t, 0));
     }
 
     return columns;
@@ -1227,7 +1511,7 @@
 
   /**
    * Returns column definition (or a part of it) for an existing table.column combination.
-   * @param {String} tableName !must exist!
+   * @param {String} entityName !must exist!
    * @param {String|Number} column
    * @param {String|Number} [part] name|type|constraints or 0|1|2
    * @return {Array|String|undefined} (Array) complete column definition (= Array(3));
@@ -1235,13 +1519,15 @@
    *                                  (undefined) unknown/not existing column or part
    * @private
    */
-  function _getColumnData(tableName, column, part)
+  function _getColumnData(entityName, column, part)
   {
-    var parts = ["name", "type", "constraints"];
+    var
+      parts = $.db.isTable(entityName) ? ["name", "type", "constraints"] : ["name", "type", "view_alias", "view_column"],
+      entities = $.db.isTable(entityName) ? tables : views;
 
     if (typeof column === "string")
     {
-      column = _getColumnIndex(tableName, column);
+      column = _getColumnIndex(entityName, column);
     }
 
     if (typeof part === "string")
@@ -1250,12 +1536,12 @@
       part = parts.indexOf(part);
     }
 
-    if (column < 0 || column >= tables[tableName].columns.length || part >= parts.length)
+    if (column < 0 || column >= entities[entityName].columns.length || part >= parts.length)
     {
       return undefined;
     }
 
-    return (part >= 0) ? tables[tableName].columns[column][part] : tables[tableName].columns[column];
+    return (part >= 0) ? entities[entityName].columns[column][part] : entities[entityName].columns[column];
   }
 
 
