@@ -397,18 +397,13 @@
      */
     executeInTransaction : function(tx, successCallback, errorCallback)
     {
-      if (!tx || !tx.executeSql)
-      {
-        throw new Error("undefined or incompatible transaction tx (" + (typeof tx) + ")");
-      }
-
       if ($.db.getOptions('debug') && console && console.log)
       {
         console.log("DbQuery->executeInTransaction '" + this.getSql() + "'", this.getValues());
       }
 
       //noinspection JSValidateTypes
-      tx.executeSql(this.getSql(), this.getValues(), successCallback, errorCallback);
+      $.db.executeSql(tx, this.getSql(), this.getValues(), successCallback, errorCallback);
     },
 
 
