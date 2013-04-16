@@ -397,11 +397,6 @@
      */
     executeInTransaction : function(tx, successCallback, errorCallback)
     {
-      if ($.db.getOptions('debug') && console && console.log)
-      {
-        console.log("DbQuery->executeInTransaction '" + this.getSql() + "'", this.getValues());
-      }
-
       //noinspection JSValidateTypes
       $.db.executeSql(tx, this.getSql(), this.getValues(), successCallback, errorCallback);
     },
@@ -565,6 +560,7 @@
           if (entry[0] === "(" && !openBracket)
           {
             sql += " " + this._getLogicOperator(entry[1], operator);
+            openBracket = true;
           }
           else if (entry[0] === ")")
           {
