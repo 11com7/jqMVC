@@ -79,6 +79,92 @@
    */
   $.db = {};
 
+
+
+  // ===================================================================================================================
+  //
+  // ===================================================================================================================
+  /**
+   * $.db.Select class definition.
+   * @constructor
+   */
+  $.db.Select = function()
+  {
+    this.select = "";
+    this.from = "";
+    this.where = "";
+    this.group = "";
+    this.having = "";
+    this.order = "";
+    this.limit = "";
+  };
+
+  $.db.Select.prototype =
+  {
+    constructor : $.db.Select,
+
+    /**
+     * Returns the value of an attribute.
+     * @param {String} attribute
+     * @returns {*}
+     */
+    get : function(attribute)
+    {
+      if (!attribute in this) { return undefined; }
+
+      return this[attribute];
+    },
+
+    /**
+     * Returns the string value of an attribute
+     * @param {String} attribute
+     * @param {String} [separator]
+     * @returns {String}
+     */
+    getString : function(attribute, separator)
+    {
+      if (!attribute in this) { return undefined; }
+
+      separator = separator || " ";
+
+      if ($.isArray(this[attribute])) { return this[attribute].join(separator); }
+      else if ($.isObject(this[attribute]) && !!this[attribute].toString) { return this[attribute].toString(); }
+      else if ($.isFunction(this[attribute])) { return "" + this[attribute](this); }
+      else { return "" + this[attribute]; }
+    }
+
+  };
+
+
+  /**
+   * (internal) view class (only for jsdoc documentation).
+   * @constructor
+   */
+  $.db.View = function()
+  {
+    /**
+     * @type {Array.<Array>}
+     */
+    this.columns = [];
+
+    /**
+     * @type {Array}  ALWAYS EMPTY!
+     */
+    this.constraints = [];
+
+    /**
+     * @type {Object} { alias:entityName, ... }
+     */
+    this.tables = {};
+
+    /**
+     * @type {$.db.Select}
+     */
+    this.select = new $.db.Select();
+  }
+
+
+
   // ===================================================================================================================
   // OPEN / CLOSE
   // ===================================================================================================================
@@ -417,16 +503,13 @@
       "columns" : [],
       "constraints" : [], // <-- always empty!
       "tables" : $.extend({}, tables),
-      "select" : $.extend({}, select)
+      "select" : $.extend(new $.db.Select(), select)
     };
 
+    /** @type {$.db.View} */
     var viewObj = views[viewName];
 
     $.db.setViewColumns(viewName, columns);
-
-    console.log(viewObj);
-    _createViewSelect(viewName);
-
   };
 
 
@@ -523,30 +606,63 @@
 
   /**
    * @param {String}viewName existing view
+   * @return {String} SELECT string for a view
    */
   function _createViewSelect(viewName)
   {
     if (!viewName) { throw new TypeError("missing or empty viewName"); }
     if (!$.db.isView(viewName)) { throw new TypeError("unknown viewName '" + viewName + "'"); }
 
-    var sql = "SELECT", t,
+    var sql = "SELECT ", t, tmp,
+      /** @type {$.db.View} */
       view = views[viewName],
+      /** @type {Array} */
       columns = [],
       tables = [],
       select = [];
 
 
+    // SELECT [ALL|DISTINCT]
+    tmp = view.select.getString("select");
+    sql += (tmp) ? tmp + " " : "";
+
+    // COLUMNS
     for (t = 0; t < view.columns.length; t++)
     {
       var col = view.columns[t];
       columns.push(col[2] + "." + col[3] + (col[0] != col[3] ? " AS " + col[0] : ""));
     }
+    sql += columns.join(", ") + " ";
 
-    sql += " " + columns.join(", ")
+    // FROM
+    tmp = view.select.getString("from");
+    for (var alias in view.tables)
+    {
+      tmp = tmp.replace("["+alias+"]", view.tables[alias] + " as " + alias);
+    }
+    sql += "FROM " + tmp + " ";
 
-    console.log(sql);
+    // WHERE
+    tmp = view.select.getString("where");
+    sql += tmp ? "WHERE " + tmp + " " : "";
 
+    // GROUP BY
+    tmp = view.select.getString("group");
+    sql += tmp ? "GROUP BY " + tmp + " " : "";
 
+    // HAVING
+    tmp = view.select.getString("having");
+    sql += tmp ? "HAVING " + tmp + " " : "";
+
+    // ORDER BY
+    tmp = view.select.getString("order");
+    sql += tmp ? "ORDER BY " + tmp + " " : "";
+
+    // LIMIT
+    tmp = view.select.getString("limit");
+    sql += tmp ? "LIMIT " + tmp + " " : "";
+
+    return sql;
   }
 
 
@@ -852,6 +968,16 @@
         }
       }
 
+      // Views
+      sql = "::views";
+      for (var view in views)
+      {
+        if (views.hasOwnProperty(view))
+        {
+          $.db.createView(tx, view);
+        }
+      }
+
       initialized = true;
     }
   }
@@ -918,12 +1044,13 @@
    * Creates a view in the database.
    * @param {SQLTransaction} tx transaction object
    * @param {String} name viewName
+   * @param {Boolean} [force] if TRUE the view will be dropped an re-created; default: false
    */
-  $.db.createView = function(tx, name)
+  $.db.createView = function(tx, name, force)
   {
     var sql;
 
-    if (!!options.dropOnInit)
+    if (!!options.dropOnInit || !!force)
     {
       sql = $.template(SQL_DROP_VIEW, {'view' : name});
       $.db.executeSql(tx, sql);
@@ -1617,5 +1744,6 @@
       return Object.prototype.toString.call(obj).slice(8, -1);
     }
   }
+
 
 })(jq, window);
