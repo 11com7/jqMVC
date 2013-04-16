@@ -1143,7 +1143,8 @@
 
     /** @type {SQLTransaction} tx */
     sqlLast = sql;
-    if (options.debug) { $.db.dbg((!!sql) ? sql.replace(/\%/g, "%%") : sql, data); }
+    if (options.debug) { $.db.dbg("", sql, data); }
+
     //noinspection JSValidateTypes
     tx.executeSql(sql, data, successCallback, errorCallback);
   };
