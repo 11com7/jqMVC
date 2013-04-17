@@ -527,7 +527,7 @@
       for (var t=0; t < filter.length; t++)
       {
         var
-          entry = filter[t],
+          entry = filter[t] = filter[t].slice(0),// <-- create copy of filter entry, because it will be heavily changed
           entryType = typeof entry;
 
 
