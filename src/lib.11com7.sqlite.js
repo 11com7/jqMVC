@@ -794,6 +794,16 @@
   };
 
   /**
+   * Returns TRUE if the indexName is a defined index; otherwise FALSE.
+   * @param {String} indexName
+   * @return {Boolean}
+   */
+  $.db.isIndex = function(indexName)
+  {
+    return (indexName && indexes[indexName]);
+  };
+
+  /**
    * Returns TRUE if the entityName (table OR view) is a defined view; otherwise FALSE.
    * @param {String} entityName
    * @return {Boolean}
@@ -1029,6 +1039,11 @@
   $.db.createIndex = function(tx, index)
   {
     var sql;
+
+    if (!$.db.isIndex(index))
+    {
+      throw new TypeError("unknown index: '" + index + "' (" + $.typeOf(index) + ")");
+    }
 
     if (!!options.dropOnInit)
     {
