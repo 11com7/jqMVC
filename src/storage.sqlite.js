@@ -288,25 +288,6 @@ var SqliteStorageAdapter = (function($)
       }
     },
 
-    /**
-     * (internal) Converts DATE columns to JS date objects, if they are unequal 0 or NULL.
-     * @param {jq.mvc.modelDb} obj
-     * @param {String} tableName
-     * @param {Array[String]} columns
-     */
-    _autoConvertDates : function(obj, tableName, columns)
-    {
-      columns.forEach(function(col)
-      {
-        if ($.db.isDateColumn(tableName, col) && obj.hasOwnProperty(col) && obj[col] !== 0 && obj[col] !== null)
-        {
-          var oldVal = obj[col];
-
-          obj[col] = $.db.db2date(obj[col]);
-        }
-      });
-    },
-
 
     // ===================================================================================================================
     // getAll
@@ -436,11 +417,32 @@ var SqliteStorageAdapter = (function($)
       }
 
       return this.dbQuery;
-    }
+    },
 
+
+    /**
+     * (internal) Converts DATE columns to JS date objects, if they are unequal 0 or NULL.
+     * @param {jq.mvc.modelDb} obj
+     * @param {String} tableName
+     * @param {Array.<String>} columns
+     */
+    _autoConvertDates : function(obj, tableName, columns)
+    {
+      columns.forEach(function(col)
+      {
+        if ($.db.isDateColumn(tableName, col) && obj.hasOwnProperty(col) && obj[col] !== 0 && obj[col] !== null)
+        {
+          var oldVal = obj[col];
+
+          obj[col] = $.db.db2date(obj[col]);
+        }
+      });
+    }
 
     // END of class
   };
+
+
 
 
 

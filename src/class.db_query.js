@@ -843,7 +843,12 @@
         throw new Error("missing or empty value in search[" + searchIndex + "][" + valueIndex + "]; entry: ['" + entry.join("','") +  "']");
       }
 
-      var value = entry[valueIndex], operator = entry[opIndex];
+      var
+        value = entry[valueIndex],
+        operator = entry[opIndex],
+        valueType = $.typeOf(value),
+        placeholder = this._getColumnPlaceholder(this._table, entry[0])
+        ;
 
 
       // special treatment for array operator with string values (which should be converted to arrays)
@@ -852,24 +857,7 @@
         value = value.split(/\s*,\s*/);
       }
 
-
-      if (isString(value) || isNumeric(value))
-      {
-        this._sqlValues.push(value);
-        value = "?";
-      }
-      else if (typeof value === "boolean")
-      {
-        // convert bool to INT because sqlite don't know boolean values
-        this._sqlValues.push(value + 0);
-        value = "?";
-      }
-      else if (value === null)
-      {
-        this._sqlValues.push("NULL");
-        value = "?";
-      }
-      else if ($.isArray(value))
+      if ("Array" === valueType)
       {
         if (!this.SQL_OPERATORS_ARRAY.hasOwnProperty(operator))
         {
@@ -883,8 +871,9 @@
             throw new Error("unsupported array length for BETWEEN operator in search[" + searchIndex + "][" + valueIndex + "]: [" + value.join(", ") + "] (" + (typeof value) + ")");
           }
 
-          this._sqlValues.push(value[0], value[1]);
-          value = "? AND ?";
+          this._pushValue(value[0]);
+          this._pushValue(value[1]);
+          value = placeholder + " AND " + placeholder;
         }
         // array operators like IN, NOT IN
         else
@@ -892,11 +881,11 @@
           var tmp = "(";
           for (var tt in value)
           {
-            tmp+=(tt != 0 ? ", " : "") + "?";
-            this._sqlValues.push(value[tt]);
+            tmp+=(tt != 0 ? ", " : "") + placeholder;
+            this._pushValue(value[tt]);
           }
           value = tmp + ")";
-        }
+        }        
       }
       else if (value instanceof $.SqlClause)
       {
@@ -904,18 +893,78 @@
         {
           this._sqlValues.push.apply(this._sqlValues, value.values());
         }
-
         value = value.get();
       }
       else
       {
-        throw new Error("unsupported value in search[" + searchIndex + "][" + valueIndex + "]: '" + value + "' (" + (typeof value) + ")");
+        if (this._pushValue(value) === false)
+        {
+          throw new Error("unsupported value in search[" + searchIndex + "][" + valueIndex + "]: '" + value + "' (" + (typeof value) + ")");
+        }
+        
+        value = placeholder;
+      }
+      
+      return value;
+    },
+
+
+    /**
+     * (internal) converts and pushes the value into the internal value array (_sqlValues).
+     * @param {String|Number|Boolean|null|Date|Array} value
+     * @returns {boolean} TRUE for known/supported values; otherwise FALSE for unknown
+     */
+    _pushValue : function(value)
+    {
+      var dbVal, valueType = $.typeOf(value);
+
+      if (isString(value) || isNumeric(value))
+      {
+        dbVal = value;
+      }
+      else if ("Boolean" === valueType)
+      {
+        // convert bool to INT because sqlite don't know boolean values
+        dbVal = value + 0;
+      }
+      else if ("null" === valueType)
+      {
+        dbVal = "NULL";
+      }
+      else if ("Date" === valueType)
+      {
+        dbVal = value.toISOString();
+      }
+      else if ("Array" === valueType)
+      {
+        dbVal = "'" + value.join("', '") + "'";
+      }
+      // UNKNOWN TYPE!
+      else
+      {
+        return false;
       }
 
-      return value;
+      this._sqlValues.push(dbVal);
+      return true;      
+    },
+
+
+    /**
+     * (internal) tries to get a correct placeholder for known table/column pairs and '?' otherwise.
+     * @param table
+     * @param column
+     * @returns {String}
+     */
+    _getColumnPlaceholder : function(table, column)
+    {
+      //noinspection JSUnresolvedFunction,JSUnresolvedVariable
+      return ($.db.columnExists(table, column)) ? $.db.getColumnPlaceholder(table, column) : "?";
     }
 
   };
+
+
 
   //noinspection SpellCheckingInspection
   /**
