@@ -430,7 +430,7 @@ var SqliteStorageAdapter = (function($)
     {
       columns.forEach(function(col)
       {
-        if ($.db.isDateColumn(tableName, col) && obj.hasOwnProperty(col) && obj[col] !== 0 && obj[col] !== null)
+        if ($.db.columnExists(tableName, col) && $.db.isDateColumn(tableName, col) && obj.hasOwnProperty(col) && obj[col] !== 0 && obj[col] !== null)
         {
           var oldVal = obj[col];
 

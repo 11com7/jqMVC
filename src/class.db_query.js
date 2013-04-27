@@ -228,7 +228,6 @@
     {
       if (!search || !search.columns) { search.columns = null; }
 
-
       var
         returnColumns = this._searchPrepareReturnColumns(search.columns),
         sqlWhere
@@ -528,13 +527,13 @@
       {
         var
           entry = filter[t] = filter[t].slice(0),// <-- create copy of filter entry, because it will be heavily changed
-          entryType = typeof entry;
+          entryType = $.typeOf(entry);
 
 
         if (!entry) { throw new Error("missing search.filter[" + t + "] (" + (typeof entry) + ")"); }
 
 
-        if (!$.isArray(entry))
+        if ("Array" !== entryType)
         {
           if (entry === "(" || entry === ")" || entry instanceof $.SqlClause)
           {
@@ -571,7 +570,7 @@
           continue;
         }
 
-        if (entryType === "string")
+        if ("String" === entryType)
         {
           entry[0] = this._prepareColumnName(entry[0]);
         }
