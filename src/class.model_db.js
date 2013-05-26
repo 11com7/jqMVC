@@ -24,6 +24,8 @@
    * @property {String|undefined} tableName can be set, to use an alternative table name instead of modelName
    * @property {function|undefined} __wakeup (optional) can be set, as "magic" callback used by StorageAdapter.get(), StorageAdapter.getAll() to manipulate data after loading
    * @property {function|undefined} __sleep (optional) can be set, as "magic" callback used by StorageAdapter.save() to manipulate data before saving
+   * @property {function|undefined} __save (optional) can be set, as "magic" callback used by StorageAdapter.save() to
+   * @property {function|undefined} __remove (optional) can be set, as "magic" callback used by StorageAdapter.remove() to manipulate data before saving
    * @param {String} name of new model
    * @param {Object} opts default methods/properties
    */
@@ -35,6 +37,7 @@
     this.__wakeup = undefined;
     this.__sleep = undefined;
     this.__save = undefined;
+    this.__remove = undefined;
 
     $.mvc.model.apply(this, arguments);
     this.tableName = opts.tableName || this.modelName;

@@ -333,7 +333,14 @@ var SqliteStorageAdapter = (function($)
         {
           $.db.executeSql(tx, sql, [obj.id], function(tx, results)
           {
-            if (results.rowsAffected)
+            var enforceDeleted = false;
+
+            if (obj.__remove && $.isFunction(obj.__remove))
+            {
+              enforceDeleted = obj.__remove.call(obj, tx, results);
+            }
+
+            if (results.rowsAffected || enforceDeleted === true)
             {
               $(document).trigger(obj.modelName + ":remove", obj.id);
               if (callback && $.isFunction(callback)) { callback(obj) }
