@@ -1089,7 +1089,7 @@
 
     for (t=0; t < columns.length; t++)
     {
-      var columnData = _getColumnData(tableName, columns[t]);
+      var columnData = _getColumnData(tableName, columns[t]).slice(0); // <-- CREATE COPY!
 
       // TYPE: convert to sql type (needed for auto date magic handling)
       columnData[1] = $.db.getSqlColumnType(tableName, columns[t]);
