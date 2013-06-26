@@ -1554,7 +1554,7 @@
    */
   function _isDateType(colType)
   {
-    return (colType.indexOf("DATE") > -1 || colType.indexOf("TIME") > 0)
+    return (colType.indexOf("DATE") > -1 || colType.indexOf("TIME") > -1)
   };
 
 
