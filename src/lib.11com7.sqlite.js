@@ -1220,15 +1220,16 @@
    * @param {SQLTransaction} [tx] the functions creates a SQLTransaction if necessary
    * @param {function(SQLTransaction, SQLResultSet)} [readyCallback]
    * @param {function(SQLTransaction, SQLError)} [errorCallback]
+   * @param {Object} [options] "onConflict":[ROLLBACK|ABORT|FAIL|IGNORE|REPLACE]
    */
-  $.db.insertMultiRows = function(tableName, columns, rows, tx, readyCallback, errorCallback)
+  $.db.insertMultiRows = function(tableName, columns, rows, tx, readyCallback, errorCallback, options)
   {
     // start transaction if necessary
     if (typeof tx !== "object")
     {
       $.db.getDatabase().transaction(function(tx)
       {
-        $.db.insertMultiRows(tableName, columns, rows, tx, readyCallback, errorCallback);
+        $.db.insertMultiRows(tableName, columns, rows, tx, readyCallback, errorCallback, options);
       });
       return;
     }
@@ -1241,7 +1242,7 @@
     readyCallback = $.isFunction(readyCallback) ? readyCallback : undefined;
     errorCallback = $.isFunction(errorCallback) ? errorCallback : undefined;
 
-    var sql = $.db.createSqlInsertMultiRows(tableName, columns, rows);
+    var sql = $.db.createSqlInsertMultiRows(tableName, columns, rows, options);
     var values = [];
 
     for (var t = 0; t < rows.length; t++)
@@ -1258,17 +1259,22 @@
   };
 
   /**
-   *
+   * Generates a SQL-String for multi inserts based on INSERT INTO … + n-1 * UNION ALL SELECT ….
    * @param {String} tableName
    * @param {Array} columns
    * @param {Array} rows has to be an array with data arrays [[colData1, ..., colDataN], [...]]
+   * @param {Object} [options] "onConflict":[ROLLBACK|ABORT|FAIL|IGNORE|REPLACE]
    * @return {String}
    */
-  $.db.createSqlInsertMultiRows = function(tableName, columns, rows)
+  $.db.createSqlInsertMultiRows = function(tableName, columns, rows, options)
   {
     if (!rows || !rows.length || rows.length < 1) { return ""; }
 
-    var sql = "INSERT INTO " + tableName + "(" + columns.join(',') + ") ";
+    options = options || {};
+
+    var
+      onConflict = !!options.onConflict ? " OR " + options.onConflict.trim().toUpperCase() : "",
+      sql = "INSERT" + onConflict + " INTO " + tableName + "(" + columns.join(',') + ") ";
 
 
     // first row as select
