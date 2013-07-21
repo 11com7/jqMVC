@@ -194,8 +194,8 @@
      * @param {Number|Array|null} [search.limit=0]
      * @param {String} [search.operator='AND']
      * @param {String|Array} [search.order='']
-     * @param {Function} successCallback
-     * @param {Function} [errorCallback]
+     * @param {function(SQLTransaction, SQLResultSet)} successCallback
+     * @param {function(SQLTransaction, SQLError)} [errorCallback]
      */
     search : function(search, successCallback, errorCallback)
     {
@@ -266,8 +266,8 @@
      * @param {Object} search  search object
      * @param {Array} search.filter filter array (empty array returns all entries)
      * @param {String} [search.operator='AND']
-     * @param {Function} errorCallback
-     * @param {Function} [successCallback]
+     * @param {function(SQLTransaction, SQLResultSet)} successCallback
+     * @param {function(SQLTransaction, SQLError)} [errorCallback]
      */
     count : function(search, successCallback, errorCallback)
     {
@@ -303,8 +303,8 @@
      * @param {Array} search.filter filter array (empty array returns all entries)
      * @param {Number|Array|null} [search.limit]
      * @param {String} [search.operator='AND']
-     * @param {Function} errorCallback
-     * @param {Function} [successCallback]
+     * @param {function(SQLTransaction, SQLResultSet)} successCallback
+     * @param {function(SQLTransaction, SQLError)} [errorCallback]
      */
     deleteSearch : function(search, successCallback, errorCallback)
     {
@@ -343,8 +343,8 @@
     /**
      * This function executes the actual SQL command.
      * They had to be build with one of the buildXyz()-methods.
-     * @param {Function} successCallback
-     * @param {Function} [errorCallback]
+     * @param {function(SQLTransaction, SQLResultSet)} [successCallback]
+     * @param {function(SQLTransaction, SQLError)} [errorCallback]
      */
     execute : function(successCallback, errorCallback)
     {
@@ -361,8 +361,8 @@
     /**
      * This function executes the actual SQL command.
      * They had to be build with one of the buildXyz()-methods.
-     * @param {Function} successCallback
-     * @param {Function} [errorCallback]
+     * @param {function(SQLTransaction, SQLResultSet)} [successCallback]
+     * @param {function(SQLTransaction, SQLError)} [errorCallback]
      */
     executeOneValue : function(successCallback, errorCallback)
     {
@@ -391,8 +391,8 @@
     /**
      * Execute the sql query in an opened transaction.
      * @param {SQLTransaction} tx
-     * @param {Function} [successCallback]
-     * @param {Function} [errorCallback]
+     * @param {function(SQLTransaction, SQLResultSet)} [successCallback]
+     * @param {function(SQLTransaction, SQLError)} [errorCallback]
      */
     executeInTransaction : function(tx, successCallback, errorCallback)
     {
@@ -424,7 +424,7 @@
     },
 
     /**
-     * Returns the actual SQL query string (will be created by prepare[Search|Count|DeleteSearch|…]).
+     * Returns the actual SQL query string (will be created by prepare[Search|Count|DeleteSearch|ï¿½]).
      * @return {String}
      */
     getSql : function()
@@ -968,7 +968,7 @@
   //noinspection SpellCheckingInspection
   /**
    * Return TRUE if test is a numeric value.
-   * @author Christian C. Salvadó
+   * @author Christian C. Salvadï¿½
    * @see http://stackoverflow.com/a/1830844
    * @param {*} test
    * @return {Boolean}
