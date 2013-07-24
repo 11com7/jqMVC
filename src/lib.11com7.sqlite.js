@@ -85,6 +85,15 @@
    */
   $.db = {};
 
+  Object.defineProperties($.db,
+  {
+    "SQLITE_TABLE_MASTER" : { value: "sqlite_master", writable: false},
+    "SQLITE_TABLE_AUTOINCREMENT" : { value: "sqlite_sequence", writable: false},
+    "SQLITE_TYPE_TABLE" : { value: "table", writable: false},
+    "SQLITE_TYPE_VIEW" : { value: "view", writable: false},
+    "SQLITE_TYPE_TRIGGER" : { value: "trigger", writable: false},
+    "SQLITE_TYPE_INDEX" : { value: "index", writable: false}
+  });
 
 
   // ===================================================================================================================
@@ -1345,7 +1354,7 @@
           {
             "__WebKitDatabaseInfoTable__" : true,
             "sqlite_autoindex___WebKitDatabaseInfoTable___1" : true,
-            "sqlite_sequence" : true
+            SQLITE_AUTOINCREMENT_TABLE : true
           },
           sqliteSequenceExists = false
           ;
@@ -1358,7 +1367,7 @@
           {
             $.db.executeSql(tx, "DROP " + results.rows.item(t).type + " IF EXISTS " + name);
           }
-          else if(name === "sqlite_sequence")
+          else if(name === SQLITE_TABLE_AUTOINCREMENT)
           {
             sqliteSequenceExists = true;
           }
@@ -1366,7 +1375,7 @@
 
         if (sqliteSequenceExists)
         {
-          $.db.executeSql(tx, "DELETE FROM sqlite_sequence", [], readyCallback); // delete all auto ids
+          $.db.executeSql(tx, "DELETE FROM " + SQLITE_TABLE_AUTOINCREMENT, [], readyCallback); // delete all auto ids
         }
         else
         {
@@ -1387,11 +1396,11 @@
   // truncate (shim)
   // ===================================================================================================================
   /**
-   *
-   * @param tableName
-   * @param tx
-   * @param successCallback
-   * @param errorCallback
+   * Empties a table completely and resets it's autoincrement counter if exists.
+   * @param {String} tableName Table OR ViewName
+   * @param {SQLTransaction|null} tx (null) creates auto-transaction
+   * @param {function(SQLTransaction)} [successCallback]
+   * @param {function(SQLTransaction, SQLError)} [errorCallback]
    */
   $.db.truncate = function(tableName, tx, successCallback, errorCallback)
   {
@@ -1403,8 +1412,93 @@
     if (!$.db.tableExists(tableName)) { throw new Error("tableName '" + tableName + "' isn't added/defined."); }
 
 
-  }
+    $.db.executeSql(tx, "DELETE FROM " + tableName, [],
+    // SUCCESS
+    function(tx, resultSet)
+    {
+      $.db.ifExistsInDb($.db.SQLITE_TABLE_AUTOINCREMENT, $.db.SQLITE_TYPE_TABLE, tx, function(tx)
+        // AUTOINCREMENT-TABLE EXISTS
+        {
+          $.db.executeSql(tx, "DELETE FROM " + $.db.SQLITE_TABLE_AUTOINCREMENT + " WHERE name=?", [tableName],
+            function(tx, resultSet)
+            {
+              successCallback(tx);
+            });
+        },
+        // DOESN'T EXISTS
+        function(tx)
+        {
+          successCallback(tx);
+        }
+      );
+    },
+    // ERROR
+    function(tx, error)
+    {
+      if ($.isFunction(errorCallback))
+      {
+        errorCallback(tx, error);
+      }
+      else
+      {
+        throw new Error($.db.SqlError(error));
+      }
+    });
+  };
 
+
+
+  // ===================================================================================================================
+  // ifExistsInDb()
+  // ===================================================================================================================
+  /**
+   * Searches an entity in the sqlite master table and calls a found or notExists callback function.
+   * @param {String} name entity name
+   * @param {String|null|undefined|Boolean} [type=""] optional type filter for $.db.SQLITE_TYPE_ types
+   * @param {SQLTransaction|null} tx (null) creates an auto transaction
+   * @param {function(SQLTransaction)} existsCallback will be called after succeeded search
+   * @param {function(SQLTransaction)} notExistsCallback will be called if 'name' (type) doesn't exists
+   */
+  $.db.ifExistsInDb = function(name, type, tx, existsCallback, notExistsCallback)
+  {
+    // Auto-Transaction
+    if ($.db.autoTransaction(tx, function(tx) { $.db.ifExistsInDb(name, type, tx, existsCallback, notExistsCallback); }))
+    { return; }
+
+    // TypeCheck
+    if (!$.is("String", name) || name === "") { throw new TypeError("name has to be a non empty string"); }
+
+
+    // create SQL
+    var sql = "SELECT COUNT(*) as cnt FROM " + $.db.SQLITE_TABLE_MASTER + " WHERE name = ?", data=[name];
+
+    if (type)
+    {
+      if (!$.is("String", type)) { throw new TypeError("type has to be null|undefined|string"); }
+
+      sql += " AND type=?";
+      data.push(type);
+    }
+
+    $.db.executeSql(tx, sql, data, function(tx, /** SQLResultSet */ resultSet)
+    {
+      if (resultSet.rows.length)
+      {
+        var row = resultSet.rows.item(0);
+        if (row.cnt)
+        {
+          existsCallback(tx);
+          return;
+        }
+      }
+
+      if ($.isFunction(notExistsCallback)) { notExistsCallback(tx); }
+    });
+  };
+
+  // ===================================================================================================================
+  // AutoTransaction
+  // ===================================================================================================================
   /**
    * Starts a sql transaction if tx isn't a transaction object and calls a function with arguments.
    *
