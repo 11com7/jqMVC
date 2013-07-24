@@ -10,7 +10,12 @@
  * @since 2012-09-30
  * @namespace jq
  */
-(function(/** {jq} */ $, window, undefined)
+(/**
+ * @param {jq} $
+ * @param {Window} window
+ * @param {undefined} [undefined]
+ */
+ function($, window, undefined)
 {
   "use strict";
 
@@ -75,7 +80,8 @@
 
 
   /**
-   * @namespace jq.db
+   * @namespace
+   * @name jq.db
    */
   $.db = {};
 
@@ -171,6 +177,7 @@
   /**
    * Opens the database if necessary and returns the database object.
    * @return {Database|Boolean}
+   * name jq.db.open()
    */
   $.db.open = function()
   {
@@ -1374,6 +1381,60 @@
     );
 
   };
+
+
+  // ===================================================================================================================
+  // truncate (shim)
+  // ===================================================================================================================
+  /**
+   *
+   * @param tableName
+   * @param tx
+   * @param successCallback
+   * @param errorCallback
+   */
+  $.db.truncate = function(tableName, tx, successCallback, errorCallback)
+  {
+    // AutoTransaction
+    if ($.db.autoTransaction(tx, function(tx) { $.db.truncate(tableName, tx, successCallback, errorCallback); }))
+    { return; }
+
+    if (!tableName) { throw new Error("missing or empty tableName"); }
+    if (!$.db.tableExists(tableName)) { throw new Error("tableName '" + tableName + "' isn't added/defined."); }
+
+
+  }
+
+  /**
+   * Starts a sql transaction if tx isn't a transaction object and calls a function with arguments.
+   *
+   * @example <caption>How to use</caption>
+   * function doWhatever(tx, ...)
+   * {
+   *   if ($.db.autoTransaction(tx, function(tx) { doWhatever(tx, ...); }))
+   *   {
+   *     return;
+   *   }
+   *
+   *   // tx is a transaction object below
+   *   ...
+   * }
+   * @param {SQLTransaction|null} tx will be auto generated if not a transaction object
+   * @param {function} func the caller function, that has to be called in autp transaction
+   * @param {Array|Arguments} args
+   * @returns {boolean} if the function returns TRUE the caller HAS TO return to prevent double calls
+   * @name jq.db.autoTransaction()
+   */
+  $.db.autoTransaction = function(tx, func)
+  {
+    if (!tx || !tx.executeSql || typeof tx === "undefined")
+    {
+      $.db.getDatabase().transaction(func);
+      return true;
+    }
+
+    return false;
+  }
 
 
   // ===================================================================================================================
