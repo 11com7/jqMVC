@@ -917,8 +917,9 @@
    * Initialize database – has to be called after configuration.
    * @param {SQLTransaction} [tx] used only for opened databases
    * @param {Boolean} [forceReInit] if this will be set to TRUE, initialized will be reset to false and the init process restarts
+   * @param {function(SQLTransaction)} [readyCallback] will be called after initialisation is complete
    */
-  $.db.initDb = function(tx, forceReInit)
+  $.db.initDb = function(tx, forceReInit, readyCallback)
   {
     if (forceReInit === true)  { initialized = false };
 
@@ -935,11 +936,11 @@
     }
     else
     {
-      _initDb(tx);
+      _initDb(tx, readyCallback);
     }
   };
 
-  function _initDb(tx)
+  function _initDb(tx, readyCallback)
   {
     if (!$.db.isOpen()) { throw new Error("database not opened"); }
 
@@ -960,10 +961,8 @@
         throw new Error($.db.SqlError(err, sql));
       },
       // success
-      function()
-      {
-        initialized = true;
-      });
+      _ready
+      );
     }
     else
     {
@@ -1004,7 +1003,13 @@
         }
       }
 
+      _ready();
+    }
+
+    function _ready()
+    {
       initialized = true;
+      if ($.isFunction(readyCallback)) { readyCallback(tx); }
     }
   }
 
@@ -1353,11 +1358,12 @@
           ignoreNames =
           {
             "__WebKitDatabaseInfoTable__" : true,
-            "sqlite_autoindex___WebKitDatabaseInfoTable___1" : true,
-            SQLITE_AUTOINCREMENT_TABLE : true
+            "sqlite_autoindex___WebKitDatabaseInfoTable___1" : true
           },
           sqliteSequenceExists = false
           ;
+
+        ignoreNames[$.db.SQLITE_TABLE_AUTOINCREMENT] = true;
 
         // delete all table, trigger, indexes, views (ignore the entities above)
         for (var t = 0; t < results.rows.length; t++)
@@ -1367,7 +1373,7 @@
           {
             $.db.executeSql(tx, "DROP " + results.rows.item(t).type + " IF EXISTS " + name);
           }
-          else if(name === SQLITE_TABLE_AUTOINCREMENT)
+          else if(name === $.db.SQLITE_TABLE_AUTOINCREMENT)
           {
             sqliteSequenceExists = true;
           }
@@ -1375,7 +1381,7 @@
 
         if (sqliteSequenceExists)
         {
-          $.db.executeSql(tx, "DELETE FROM " + SQLITE_TABLE_AUTOINCREMENT, [], readyCallback); // delete all auto ids
+          $.db.executeSql(tx, "DELETE FROM " + $.db.SQLITE_TABLE_AUTOINCREMENT, [], readyCallback); // delete all auto ids
         }
         else
         {
