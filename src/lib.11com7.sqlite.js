@@ -947,70 +947,50 @@
     var sql = "",
       tables = $.db.getTables();
 
+    // autotransaction if needed
+    if ($.db.autoTransaction(tx, function(tx) { _initDb(tx, readyCallback); } ))
+    { return; }
 
-    if (!tx || !tx.executeSql)
+    // ---------- tx exists -----------------------------------------
+    // Tables
+    sql = "::tables";
+    for (var t = 0; t < tables.length; t++)
     {
-      database.transaction(function(tx)
-      // init SQL transaction
-      {
-        _initDb(tx);
-      },
-      // ERRORS
-      function(err)
-      {
-        throw new Error($.db.SqlError(err, sql));
-      },
-      // success
-      _ready
-      );
-    }
-    else
-    {
-      // Tables
-      sql = "::tables";
-      for (var t = 0; t < tables.length; t++)
-      {
-        $.db.createTable(tx, tables[t]);
-      }
-
-      // Triggers
-      sql = "::triggers";
-      for (var trigger in triggers)
-      {
-        if (triggers.hasOwnProperty(trigger))
-        {
-          $.db.createTrigger(tx, trigger);
-        }
-      }
-
-      // Indexes
-      sql = "::indexes";
-      for (var index in indexes)
-      {
-        if (indexes.hasOwnProperty(index))
-        {
-          $.db.createIndex(tx, index);
-        }
-      }
-
-      // Views
-      sql = "::views";
-      for (var view in views)
-      {
-        if (views.hasOwnProperty(view))
-        {
-          $.db.createView(tx, view);
-        }
-      }
-
-      _ready();
+      $.db.createTable(tx, tables[t]);
     }
 
-    function _ready()
+    // Triggers
+    sql = "::triggers";
+    for (var trigger in triggers)
     {
-      initialized = true;
-      if ($.isFunction(readyCallback)) { readyCallback(tx); }
+      if (triggers.hasOwnProperty(trigger))
+      {
+        $.db.createTrigger(tx, trigger);
+      }
     }
+
+    // Indexes
+    sql = "::indexes";
+    for (var index in indexes)
+    {
+      if (indexes.hasOwnProperty(index))
+      {
+        $.db.createIndex(tx, index);
+      }
+    }
+
+    // Views
+    sql = "::views";
+    for (var view in views)
+    {
+      if (views.hasOwnProperty(view))
+      {
+        $.db.createView(tx, view);
+      }
+    }
+
+    initialized = true;
+    if ($.isFunction(readyCallback)) { readyCallback(tx); }
   }
 
 
@@ -1333,19 +1313,8 @@
    */
   $.db.dropDatabase = function(tx, readyCallback)
   {
-    if (!tx || !tx.executeSql || typeof tx === "undefined")
-    {
-      $.db.getDatabase().transaction(function(tx)
-      {
-        $.db.dropDatabase(tx);
-      },
-      function(error)
-      {
-        throw new Error($.db.SqlError(error));
-      });
-
-      return;
-    }
+    if ($.db.autoTransaction(tx, function(tx) { $.db.dropDatabase(tx, readyCallback) } ))
+    { return; }
 
 
     /** @type {SQLTransaction} tx */
@@ -1371,7 +1340,7 @@
           var name = results.rows.item(t).name;
           if (!ignoreNames.hasOwnProperty(name))
           {
-            $.db.executeSql(tx, "DROP " + results.rows.item(t).type + " IF EXISTS " + name);
+            $.db.executeSql(tx, "DROP " + results.rows.item(t).type + " IF EXISTS " + name, null);
           }
           else if(name === $.db.SQLITE_TABLE_AUTOINCREMENT)
           {
@@ -1381,7 +1350,7 @@
 
         if (sqliteSequenceExists)
         {
-          $.db.executeSql(tx, "DELETE FROM " + $.db.SQLITE_TABLE_AUTOINCREMENT, [], readyCallback); // delete all auto ids
+          $.db.executeSql(tx, "DELETE FROM " + $.db.SQLITE_TABLE_AUTOINCREMENT + " WHERE name=name", [], readyCallback); // delete all auto ids
         }
         else
         {
@@ -1389,12 +1358,13 @@
         }
       },
       // ERROR
-      function(tx, error)
-      {
-        throw new Error($.db.SqlError(error));
-      }
+      _dbError
     );
 
+    function _dbError(tx, error)
+    {
+      throw new Error($.db.SqlError(error));
+    }
   };
 
 
