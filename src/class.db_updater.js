@@ -201,7 +201,7 @@ jq.DbUpdater = (function(/** jq */ $)
     },
 
     /**
-     * @param {!Number} vers  version, has to be a continuous increasing integer (1, 2, 3, 4, …) version number
+     * @param {!Number} vers  version, has to be a continuous increasing integer (1, 2, 3, 4, ï¿½) version number
      * @param {function(SQLTransaction)} func
      * @return {DbUpdater}
      */
@@ -248,6 +248,10 @@ jq.DbUpdater = (function(/** jq */ $)
       return this;
     },
 
+
+    // --------------------------------------------------------------------------------
+    // execute
+    // --------------------------------------------------------------------------------
     /**
      * @return {DbUpdater}
      */
@@ -324,6 +328,9 @@ jq.DbUpdater = (function(/** jq */ $)
     },
 
 
+    // --------------------------------------------------------------------------------
+    // execution helper
+    // --------------------------------------------------------------------------------
     _prepareInitExecution : function()
     {
       var self = this;
