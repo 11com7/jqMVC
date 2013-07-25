@@ -79,6 +79,7 @@ jq.DbUpdater = (function(/** jq */ $)
 
   /**
    * @name jq.DbUpdater
+   * @this jq.DbUpdater.prototype
    * @param {$.db} db
    * @param {jq.DbUpdater.defaultOptions} [options]
    */
@@ -106,6 +107,12 @@ jq.DbUpdater = (function(/** jq */ $)
     this._status = STATUS_INIT;
 
     /**
+     * TRUE if the db-updater has run already once.
+     * @type {boolean}
+     */
+    this._alreadyExecuted = false;
+
+    /**
      * object type (will be known/set in execute()).
      * @type {Number}
      */
@@ -125,6 +132,13 @@ jq.DbUpdater = (function(/** jq */ $)
     this._initFuncs = [];
 
     /**
+     * will be set to TRUE after the internal init version update function was added.
+     * @type {boolean}
+     * @private
+     */
+    this._initVersionFuncAdded = false;
+
+    /**
      * update functions: will be called sequentially on updates (= database already in use).
      * the version number will be updated after every update function
      * Array.<{{version:number, function(SQLTransaction, version:Number)}}>
@@ -138,6 +152,13 @@ jq.DbUpdater = (function(/** jq */ $)
      * @type {Array}
      */
     this._readyFuncs = [];
+
+    /**
+     *  reExecute functions: will be called after re-execution.
+     *  {Array.<function(SQLTransaction)>}
+     * @type {Array}
+     */
+    this._reExecuteFuncs = [];
 
     /**
      * function call stack.
@@ -172,6 +193,10 @@ jq.DbUpdater = (function(/** jq */ $)
 
 
 
+  /**
+   * @name jq.DbUpdater.prototype
+   * @this jq.DbUpdater.prototype
+   */
   DbUpdater.prototype =
   {
     /**
@@ -257,7 +282,7 @@ jq.DbUpdater = (function(/** jq */ $)
      */
     execute : function()
     {
-      if (this._status > STATUS_INIT) { throw new Error("DbUpdater error: exceute() has already called."); }
+      if (this._status > STATUS_INIT) { console.error("DbUpdater error: exceute() has already called. Please use re-execute!"); return this; }
 
       // nothing to do
       if (this._initFuncs.length == 0 && this._updateFuncs.length == 0 && this._readyFunc.length == 0)
@@ -328,6 +353,26 @@ jq.DbUpdater = (function(/** jq */ $)
     },
 
 
+    /**
+     * Re-Starts the execution after execution() has been called before.
+     * @param {function(SQLTransaction)} readyCallback
+     * @returns {DbUpdater}
+     */
+    reExecute : function(readyCallback)
+    {
+      if (!this._alreadyExecuted) { throw new Error("DbUpdater error: exceute() has to be runned before."); }
+
+      this._status = STATUS_INIT;
+
+      if ($.isFunction(readyCallback))
+      {
+        this._reExecFunctions = [readyCallback];
+      }
+
+      return this.execute();
+    },
+
+
     // --------------------------------------------------------------------------------
     // execution helper
     // --------------------------------------------------------------------------------
@@ -338,10 +383,15 @@ jq.DbUpdater = (function(/** jq */ $)
       this.dbg("no version table '" + self._options.versionTable + "' found => type INIT");
       this._type = TYPE_INIT;
 
-      this.addInitFunction(function(tx)
+      if (!this._initVersionFuncAdded)
       {
-        self._insertVersion(tx, self._getUpdateFuncVersionMax.call(self));
-      });
+        this.addInitFunction(function(tx)
+        {
+          self._insertVersion(tx, self._getUpdateFuncVersionMax.call(self));
+        });
+
+        this._initVersionFuncAdded = true;
+      }
 
       this._prepareExecution.call(this, 0, this._initFuncs);
       this._startExecution( $.proxy(this._prepareReadyCallbacks, this) );
@@ -389,7 +439,10 @@ jq.DbUpdater = (function(/** jq */ $)
     {
       this._openDatabase();
 
-      $.trigger(this, EVENT_EXECUTE);
+      if (!this._alreadyExecuted || this._options.triggerEventsOnReExecute)
+      {
+        $.trigger(this, EVENT_EXECUTE);
+      }
 
       this._nextExecution(readyCallback);
     },
@@ -409,7 +462,11 @@ jq.DbUpdater = (function(/** jq */ $)
         this._database.transaction(
           function(tx)
           {
-            $.trigger(self, EVENT_PROGRESS, [{ "value" : ++self._runTick,  "max" : self._runFuncsMax }]);
+            if (!this._alreadyExecuted || this._options.triggerEventsOnReExecute)
+            {
+              $.trigger(self, EVENT_PROGRESS, [{ "value" : ++self._runTick,  "max" : self._runFuncsMax }]);
+            }
+
             func.call(null, tx, version);
           },
           // ERROR
@@ -462,7 +519,7 @@ jq.DbUpdater = (function(/** jq */ $)
     _insertVersion : function(tx, version)
     {
       this.dbg("set version to #" + version);
-      var sql = "INSERT INTO " + this._options.versionTable + " (version) VALUES (?)";
+      var sql = "INSERT OR IGNORE INTO " + this._options.versionTable + " (version) VALUES (?)";
       //noinspection JSValidateTypes
       $.db.executeSql(tx, sql, [version]);
     },
@@ -473,20 +530,29 @@ jq.DbUpdater = (function(/** jq */ $)
     // --------------------------------------------------------------------------------
     _prepareReadyCallbacks : function()
     {
-      if (this._status >= STATUS_READY)  { throw new Error("DbUpdater already done!"); }
-
-      this.dbg("==> READY --> call ready functions");
+      this.dbg("==> READY -->", (!this._alreadyExecuted || this._options.recallReadyFunctionsOnReExecute) ? '' : "don't" , "call ready functions");
       this._status = STATUS_READY;
-      $.trigger(this, EVENT_READY);
 
-      this._prepareExecution(0, this._readyFuncs);
+      if (!this._alreadyExecuted_alreadyExecuted || this._options.triggerEventsOnReExecute)
+      {
+        $.trigger(this, EVENT_READY);
+      }
+
+      var readyFuncs = (!this._alreadyExecuted || this._options.recallReadyFunctionsOnReExecute) ? this._readyFuncs : this._reExecFunctions;
+      this._prepareExecution(0, readyFuncs);
 
       var self = this;
       this._nextExecution(function()
       {
         self.dbg("==> DONE!");
-        $.trigger(self, EVENT_DONE);
+
+        if (!this._alreadyExecuted || this._options.triggerEventsOnReExecute)
+        {
+          $.trigger(self, EVENT_DONE);
+        }
+
         self._status = STATUS_DONE;
+        this._alreadyExecuted = true;
       });
     },
 
@@ -566,7 +632,9 @@ jq.DbUpdater = (function(/** jq */ $)
     {
       versionTable : "_dbVersion",
       errorFunc : undefined,
-      debugFunc : null
+      debugFunc : null,
+      triggerEventsOnReExecute : false,
+      recallReadyFunctionsOnReExecute : false
     }
   };
 
