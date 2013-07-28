@@ -1281,6 +1281,7 @@
   $.db.createSqlInsertMultiRows = function(tableName, columns, rows, options)
   {
     if (!rows || !rows.length || rows.length < 1) { return ""; }
+    if (columns.length * rows.length > 999) { throw new Error("maximum number of place-holder variables (" + (columns.length * rows.length) + ") will be greater then 999"); }
 
     options = options || {};
 
