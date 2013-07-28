@@ -1244,7 +1244,8 @@
     errorCallback = $.isFunction(errorCallback) ? errorCallback : undefined;
 
     // fix for SQLITE ERROR #5: too many SQL variables (see http://www.sqlite.org/limits.html#max_variable_number)
-    var startRow = 0, rowsPerInsert = Math.round(900 / columns.length);
+    // fixed max 500 UNION statements per compound statement (see http://www.sqlite.org/limits.html#max_compound_select)
+    var startRow = 0, rowsPerInsert = Math.min(Math.round(900 / columns.length), 499);
     _insertRowChunks();
 
     function _insertRowChunks()
