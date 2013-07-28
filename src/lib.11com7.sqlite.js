@@ -1243,20 +1243,31 @@
     readyCallback = $.isFunction(readyCallback) ? readyCallback : undefined;
     errorCallback = $.isFunction(errorCallback) ? errorCallback : undefined;
 
-    var sql = $.db.createSqlInsertMultiRows(tableName, columns, rows, options);
-    var values = [];
+    // fix for SQLITE ERROR #5: too many SQL variables (see http://www.sqlite.org/limits.html#max_variable_number)
+    var startRow = 0, rowsPerInsert = Math.round(900 / columns.length);
+    _insertRowChunks();
 
-    for (var t = 0; t < rows.length; t++)
+    function _insertRowChunks()
     {
-      var row = $.db.prepareData(rows[t]);
-      for (var tt = 0; tt < row.length; tt++)
-      {
-        values.push(row[tt]);
-      }
-    }
+      var end = startRow + rowsPerInsert,
+        chunkRows = rows.slice(startRow, end),
+        sql = $.db.createSqlInsertMultiRows(tableName, columns, chunkRows, options),
+        sqlValues = [];
 
-    //noinspection JSValidateTypes
-    $.db.executeSql(tx, sql, values, readyCallback, errorCallback);
+      startRow += rowsPerInsert;
+
+      for (var t = 0; t < chunkRows.length; t++)
+      {
+        var colsData = $.db.prepareData(chunkRows[t]);
+        for (var tt = 0; tt < colsData.length; tt++)
+        {
+          sqlValues.push(colsData[tt]);
+        }
+      }
+
+      //noinspection JSValidateTypes
+      $.db.executeSql(tx, sql, sqlValues, (end > rows.length) ? readyCallback : _insertRowChunks, errorCallback);
+    }
   };
 
   /**
