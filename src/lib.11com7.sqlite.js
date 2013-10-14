@@ -1411,13 +1411,13 @@
           $.db.executeSql(tx, "DELETE FROM " + $.db.SQLITE_TABLE_AUTOINCREMENT + " WHERE name=?", [tableName],
             function(tx, resultSet)
             {
-              successCallback(tx);
+              if ($.isFunction(successCallback)) { successCallback(tx);  }
             });
         },
         // DOESN'T EXISTS
         function(tx)
         {
-          successCallback(tx);
+          if ($.isFunction(successCallback)) { successCallback(tx); }
         }
       );
     },
