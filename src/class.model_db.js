@@ -125,6 +125,19 @@
 
 
   /**
+   * Returns data keynames = all public attributes, which doesn't start with underscore(s).
+   * This function relies on coorect attribute names!
+   * @returns {Array}
+   */
+  $.mvc.modelDb.prototype.getDataKeys = function() {
+    return Object.keys(this).filter(function(key) {
+      return this.hasOwnProperty(key) && key.substr(0,1) !== '_'
+        && key !== 'modelName' && key !== 'tableName' && !$.isFunction(this[key]);
+    }, this);
+  };
+
+
+  /**
    * Search (selects) elements from the database.
    * @param {Object} search
    * @param {Function} callback
