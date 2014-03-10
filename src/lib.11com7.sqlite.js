@@ -998,12 +998,13 @@
    * Creates a table entity in the database.
    * @param {SQLTransaction} tx transaction object
    * @param {String} name table name
+   * @param {Boolean} [force] (default: false); DROPS the table if true!
    */
-  $.db.createTable = function(tx, name)
+  $.db.createTable = function(tx, name, force)
   {
     var sql;
 
-    if (!!options.dropOnInit)
+    if (!!options.dropOnInit || !!force)
     {
       sql = $.template(SQL_DROP_TABLE, {'table' : name});
       $.db.executeSql(tx, sql);
@@ -1017,12 +1018,13 @@
    * Creates a named trigger in the database.
    * @param {SQLTransaction} tx transaction object
    * @param {String} trigger trigger name
+   * @param {Boolean} [force] (default: false); DROPS the table if true!
    */
-  $.db.createTrigger = function(tx, trigger)
+  $.db.createTrigger = function(tx, trigger, force)
   {
     var sql;
 
-    if (!!options.dropOnInit)
+    if (!!options.dropOnInit || !!force)
     {
       sql = $.template(SQL_DROP_TRIGGER, {'trigger' : trigger});
       $.db.executeSql(tx,sql);
@@ -1036,8 +1038,9 @@
    * Creates a named index in the database.
    * @param {SQLTransaction} tx transaction object
    * @param {String} index index name
+   * @param {Boolean} [force] (default: false); DROPS the table if true!
    */
-  $.db.createIndex = function(tx, index)
+  $.db.createIndex = function(tx, index, force)
   {
     var sql;
 
@@ -1046,7 +1049,7 @@
       throw new TypeError("unknown index: '" + index + "' (" + $.typeOf(index) + ")");
     }
 
-    if (!!options.dropOnInit)
+    if (!!options.dropOnInit || !!force)
     {
       sql = $.template(SQL_DROP_INDEX, {'index' : index});
       $.db.executeSql(tx, sql);
