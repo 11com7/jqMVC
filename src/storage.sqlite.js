@@ -343,8 +343,9 @@ var SqliteStorageAdapter = (function($)
             if (results.rowsAffected || enforceDeleted === true)
             {
               $(document).trigger(obj.modelName + ":remove", obj.id);
-              if (callback && $.isFunction(callback)) { callback(obj) }
             }
+
+            if (callback && $.isFunction(callback)) { callback(obj) }
           });
         },
         // ERROR
