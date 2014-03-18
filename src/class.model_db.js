@@ -155,8 +155,8 @@ function($, window, undefined)
    *  }</pre>
    *
    * @param {Object} search
-   * @param {Function} callback
-   * @param {Function} errorCallback
+   * @param {function(Array.<Object|$.mvc.modelDb>)} callback Array with model objects
+   * @param {function(SQLTransaction, SQLError)} errorCallback
    * @this $.mvc.modelDb
    */
   $.mvc.modelDb.prototype.search = function(search, callback, errorCallback)
