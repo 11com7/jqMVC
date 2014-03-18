@@ -144,6 +144,16 @@ function($, window, undefined)
 
   /**
    * Search (selects) elements from the database.
+   *
+   * Search-Quer-Objekt<pre>
+   *  {
+   *    filter : {Array},             // Filter/Query
+   *    columns : {Array|null},       // (Array) existing Columns or $.SqlClause-Objects; (null) all columns
+   *    limit : {Number|Array|null},  // default: 0; (optional)
+   *    operator : {String},          // Default-Operator (optional, default: AND); ['AND', 'OR', 'XOR', 'NOT']
+   *    order : {String|Array}        // Query-Order (optional)
+   *  }</pre>
+   *
    * @param {Object} search
    * @param {Function} callback
    * @param {Function} errorCallback

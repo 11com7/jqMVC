@@ -85,6 +85,15 @@
   /**
    * DbQuery - this class helps to create sql select statements with arrays.
    *
+   * Search-Quer-Objekt<pre>
+   *  {
+   *    filter : {Array},             // Filter/Query
+   *    columns : {Array|null},       // (Array) existing Columns or $.SqlClause-Objects; (null) all columns
+   *    limit : {Number|Array|null},  // default: 0; (optional)
+   *    operator : {String},          // Default-Operator (optional, default: AND); ['AND', 'OR', 'XOR', 'NOT']
+   *    order : {String|Array}        // Query-Order (optional)
+   *  }</pre>
+   *
    * Queries are build with a filter/search array:<pre>
    * Simple:
    *  ['a', '=', 1] => "WHERE a=?"; [1]
