@@ -1495,7 +1495,7 @@
    * Starts a sql transaction if tx isn't a transaction object and calls a function with arguments.
    *
    * @example <caption>How to use</caption>
-   * function doWhatever(tx, ...)
+   * <pre><code>function doWhatever(tx, ...)
    * {
    *   if ($.db.autoTransaction(tx, function(tx) { doWhatever(tx, ...); }))
    *   {
@@ -1503,11 +1503,10 @@
    *   }
    *
    *   // tx is a transaction object below
-   *   ...
-   * }
+   *   // ...
+   * }</code></pre>
    * @param {SQLTransaction|null} tx will be auto generated if not a transaction object
-   * @param {function} func the caller function, that has to be called in autp transaction
-   * @param {Array|Arguments} args
+   * @param {function(SQLTransaction, [SQLTransactionErrorCallback], [SQLTransactionCallback])} func the caller function, that has to be called in auto transaction
    * @returns {boolean} if the function returns TRUE the caller HAS TO return to prevent double calls
    * @name jq.db.autoTransaction()
    */
