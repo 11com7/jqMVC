@@ -1506,15 +1506,17 @@
    *   // ...
    * }</code></pre>
    * @param {SQLTransaction|null} tx will be auto generated if not a transaction object
-   * @param {function(SQLTransaction, [SQLTransactionErrorCallback], [SQLTransactionCallback])} func the caller function, that has to be called in auto transaction
+   * @param {function(SQLTransaction)} func the caller function, that has to be called in auto transaction
+   * @param {function(SQLError)|SQLTransactionErrorCallback} [errorCallback]
+   * @param {function()|SQLVoidCallback} [successCallback]
    * @returns {boolean} if the function returns TRUE the caller HAS TO return to prevent double calls
    * @name af.db.autoTransaction()
    */
-  $.db.autoTransaction = function(tx, func)
+  $.db.autoTransaction = function(tx, func, errorCallback, successCallback)
   {
     if (!tx || !tx.executeSql || typeof tx === "undefined")
     {
-      $.db.getDatabase().transaction(func);
+      $.db.getDatabase().transaction(func, errorCallback, successCallback);
       return true;
     }
 
