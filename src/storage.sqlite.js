@@ -308,8 +308,8 @@ var SqliteStorageAdapter = (function($)
     // ===================================================================================================================
     /**
      * <p>Removes object from database.</p>
-     * <p>The callback function will only been called, if the element was "really" deleted in the database.</p>
-     * <p>Non existing elements won't call the callback nor trigger the remove event!</p>
+     * <p>The callback function will be called always (even if the element wasn't in the database).</p>
+     * <p>Non existing elements won't trigger the remove event!</p>
      *
      * @param {$.mvc.modelDb} obj empty model object
      * @param {function} [callback]
