@@ -1,20 +1,19 @@
 /**
- * ModelDb - an extended jqMVC model class for sqlite database models
+ * ModelDb - an extended afMVC model class for sqlite database models
  *
  * Copyright 2012 11com7, Bonn, Germany
  * @author Dominik Pesch <d.pesch@11com7.de>
  * @since 2012-11-27
- * @memberOf jq.mvc
+ * @memberOf af.mvc
  */
 (
 /**
- * @param {jq} $
+ * @param {af} $
  * @param {window} window
  * @param {undefined=} undefined
  */
-  function($, window, undefined)
+function($, window, undefined)
 {
-
   "use strict";
 
   /**
@@ -22,12 +21,14 @@
    * @class
    * @property {Number} id for object in the database (0 = new element)
    * @property {String|undefined} tableName can be set, to use an alternative table name instead of modelName
-   * @property {function|undefined} __wakeup (optional) can be set, as "magic" callback used by StorageAdapter.get(), StorageAdapter.getAll() to manipulate data after loading
-   * @property {function|undefined} __sleep (optional) can be set, as "magic" callback used by StorageAdapter.save() to manipulate data before saving
-   * @property {function|undefined} __save (optional) can be set, as "magic" callback used by StorageAdapter.save() to
+   * @property {function|undefined} __wakeup (optional) can be set, as "magic" callback used by StorageAdapter#get(), StorageAdapter.getAll() to manipulate data after loading
+   * @property {function|undefined} __sleep (optional) can be set, as "magic" callback used by StorageAdapter#save() to manipulate data before saving
+   * @property {function|undefined} __save (optional) can be set, as "magic" callback used by StorageAdapter#save() to use the same transaction as save()
    * @property {function|undefined} __remove (optional) can be set, as "magic" callback used by StorageAdapter.remove() to manipulate data before saving
    * @param {String} name of new model
    * @param {Object} opts default methods/properties
+   * @extends $.mvc.model
+   * @this $.mvc.modelDb
    */
   $.mvc.modelDb = function(name, opts)
   {
@@ -58,6 +59,7 @@
    * @param {Number} id
    * @param {function} [callback]
    * @return {Object} loaded object
+   * @this $.mvc.modelDb
    */
   $.mvc.modelDb.prototype.get = function(id, callback)
   {
@@ -82,11 +84,12 @@
   };
 
   /**
-   * Loads all entries in an array with jq.mvc.modelDb objects.
+   * Loads all entries in an array with af.mvc.modelDb objects.
    * An empty table results in an empty array.
    *
    * @param {function} [callback]
    * @return {Array}
+   * @this $.mvc.modelDb
    */
   $.mvc.modelDb.prototype.getAll = function(callback){
     var el = new $.mvc.modelDb(this.modelName, this.getBaseOptions()),
@@ -99,6 +102,7 @@
    * Set properties on the model. You can pass in a key/value or an object of properties.
    * @param {Object|String} obj
    * @param {*} [value] only used if obj ist key string
+   * @this $.mvc.modelDb
    */
   $.mvc.modelDb.prototype.set = function(obj, value){
     var readOnlyVars = ["id", "modelName", "tableName"];
@@ -128,6 +132,7 @@
    * Returns data keynames = all public attributes, which doesn't start with underscore(s).
    * This function relies on coorect attribute names!
    * @returns {Array}
+   * @this $.mvc.modelDb
    */
   $.mvc.modelDb.prototype.getDataKeys = function() {
     return Object.keys(this).filter(function(key) {
@@ -142,6 +147,7 @@
    * @param {Object} search
    * @param {Function} callback
    * @param {Function} errorCallback
+   * @this $.mvc.modelDb
    */
   $.mvc.modelDb.prototype.search = function(search, callback, errorCallback)
   {
@@ -162,6 +168,7 @@
    * @param {String} name
    * @param {Object} obj default methods/properties
    * @param {Object} [storageAdapter] - object implementing storageAdapter interface (look below for the default)
+   * @this $.mvc.modelDb
    */
   $.mvc.modelDb.extend = function(name, obj, storageAdapter) {
     // creates
@@ -182,6 +189,7 @@
 
   /**
    * @return {String} table name from tableName (or modelName).
+   * @this $.mvc.modelDb
    */
   $.mvc.modelDb.prototype.getTableName = function() {
     return (this.tableName) ? this.tableName : this.modelName;
@@ -191,4 +199,4 @@
     return this.id === 0;
   }
 
-})(jq, window);
+})(af, window);
