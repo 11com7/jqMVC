@@ -229,7 +229,7 @@ var SqliteStorageAdapter = (function($)
      *
      * @param {Number} id
      * @param {function|undefined} [callback]
-     * @param {jq.mvc.modelDb} obj
+     * @param {af.mvc.modelDb} obj
      * @requires $.db
      * @throws Error
      */
@@ -296,7 +296,7 @@ var SqliteStorageAdapter = (function($)
      * Returns all elements as array with model objects. Empty tables result in an empty array.
      * @param {String} type model name
      * @param {function} [callback]
-     * @param {jq.mvc.modelDb} obj empty model object
+     * @param {af.mvc.modelDb} obj empty model object
      */
     getAll:function(type, callback, obj){
       this.search(obj, { filter: [] }, callback);
@@ -430,7 +430,7 @@ var SqliteStorageAdapter = (function($)
 
     /**
      * (internal) Converts DATE columns to JS date objects, if they are unequal 0 or NULL.
-     * @param {jq.mvc.modelDb} obj
+     * @param {af.mvc.modelDb} obj
      * @param {String} tableName
      * @param {Array.<String>} columns
      */
@@ -519,4 +519,4 @@ var SqliteStorageAdapter = (function($)
   }
 
   return SqliteStorageAdapter;
-})(jq);
+})(af);

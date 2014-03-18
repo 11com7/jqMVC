@@ -8,10 +8,10 @@
  *
  * @author Dominik Pesch <d.pesch@11com7.de>
  * @since 2012-09-30
- * @namespace jq
+ * @namespace af
  */
 (/**
- * @param {jq} $
+ * @param {af} $
  * @param {Window} window
  * @param {undefined} [undefined]
  */
@@ -81,7 +81,7 @@
 
   /**
    * @namespace
-   * @name jq.db
+   * @name af.db
    */
   $.db = {};
 
@@ -186,7 +186,7 @@
   /**
    * Opens the database if necessary and returns the database object.
    * @return {Database|Boolean}
-   * name jq.db.open()
+   * name af.db.open()
    */
   $.db.open = function()
   {
@@ -1508,7 +1508,7 @@
    * @param {SQLTransaction|null} tx will be auto generated if not a transaction object
    * @param {function(SQLTransaction, [SQLTransactionErrorCallback], [SQLTransactionCallback])} func the caller function, that has to be called in auto transaction
    * @returns {boolean} if the function returns TRUE the caller HAS TO return to prevent double calls
-   * @name jq.db.autoTransaction()
+   * @name af.db.autoTransaction()
    */
   $.db.autoTransaction = function(tx, func)
   {
@@ -1879,7 +1879,7 @@
 
 
   // ===================================================================================================================
-  // jQuery/jq helper
+  // jQuery/af helper
   // ===================================================================================================================
   //noinspection JSAccessibilityCheck
   if (typeof $.is === "undefined")
@@ -1914,4 +1914,4 @@
   }
 
 
-})(jq, window);
+})(af, window);

@@ -1,9 +1,9 @@
 /**
- * @fileOverview jq.DbUpdater class
- * @namespace jq
- * @class jq.DbUpdater
+ * @fileOverview af.DbUpdater class
+ * @namespace af
+ * @class af.DbUpdater
  */
-jq.DbUpdater = (function(/** jq */ $)
+af.DbUpdater = (function(/** af */ $)
 {
   "use strict";
 
@@ -78,10 +78,10 @@ jq.DbUpdater = (function(/** jq */ $)
 
 
   /**
-   * @name jq.DbUpdater
-   * @this jq.DbUpdater.prototype
+   * @name af.DbUpdater
+   * @this af.DbUpdater.prototype
    * @param {$.db} db
-   * @param {jq.DbUpdater.defaultOptions} [options]
+   * @param {af.DbUpdater.defaultOptions} [options]
    */
   function DbUpdater(db, options)
   {
@@ -95,7 +95,7 @@ jq.DbUpdater = (function(/** jq */ $)
     this._db = db || $.db;
 
     /**
-     * @type {jq.DbUpdater.defaultOptions}
+     * @type {af.DbUpdater.defaultOptions}
      */
     this._options = $.extend({}, this.defaultOptions, options);
     if (!$.isFunction(this._options.debugFunc)) { this._options.debugFunc = function() {}; }
@@ -194,8 +194,8 @@ jq.DbUpdater = (function(/** jq */ $)
 
 
   /**
-   * @name jq.DbUpdater.prototype
-   * @this jq.DbUpdater.prototype
+   * @name af.DbUpdater.prototype
+   * @this af.DbUpdater.prototype
    */
   DbUpdater.prototype =
   {
@@ -623,7 +623,7 @@ jq.DbUpdater = (function(/** jq */ $)
     // DefaultOptions
     // --------------------------------------------------------------------------------
     /**
-     * @namespace jq.DbUpdater.defaultOptions
+     * @namespace af.DbUpdater.defaultOptions
      * @property {String} [versionTable]
      * @property {function(String)} [errorFunc] will be called on errors with error:String
      * @property {function(...*)} [debugFunc] will be called for debug messages (should output arguments!)
@@ -640,4 +640,4 @@ jq.DbUpdater = (function(/** jq */ $)
 
 
   return DbUpdater;
-})(jq);
+})(af);

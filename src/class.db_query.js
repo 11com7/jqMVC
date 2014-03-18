@@ -1011,4 +1011,4 @@
     return obj;
   }
 
-})(jq, window);
+})(af, window);

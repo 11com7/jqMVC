@@ -7,7 +7,7 @@
  */
 var SqliteOneToManyStorageAdapter = (
 /**
- * @param {jq} $
+ * @param {af} $
  * @return {Function}
  * @lends SqliteOneToManyStorageAdapter.prototype
  */
@@ -78,4 +78,4 @@ function($)
 
   
   return SqliteOneToManyStorageAdapter;
-})(jq);
+})(af);
