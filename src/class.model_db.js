@@ -105,7 +105,7 @@ function($, window, undefined)
    * @this $.mvc.modelDb
    */
   $.mvc.modelDb.prototype.set = function(obj, value){
-    var readOnlyVars = ["id", "modelName", "tableName"];
+    var readOnlyVars = ["id", "modelName", "tableName", "SUPER", "prototype"];
 
     if (obj && $.isObject(obj))
     {
@@ -137,7 +137,8 @@ function($, window, undefined)
   $.mvc.modelDb.prototype.getDataKeys = function() {
     return Object.keys(this).filter(function(key) {
       return this.hasOwnProperty(key) && key.substr(0,1) !== '_'
-        && key !== 'modelName' && key !== 'tableName' && !$.isFunction(this[key]);
+        && key !== 'modelName' && key !== 'tableName'&& key !== 'SUPER'
+        && !$.isFunction(this[key]);
     }, this);
   };
 
@@ -201,6 +202,13 @@ function($, window, undefined)
     storageAdapter.search.call(storageAdapter, el, search, callback, errorCallback);
   };
 
+  /**
+   * Returns a clone of the actual model
+   * @return {$.mvc.modelDb}
+   * @this $.mvc.modelDb
+   */
+  $.mvc.modelDb.prototype.clone = function() { /* will be overwritten in $.mvc.modelDb.extend factory */};
+
 
   /**
    * <p>This is called to create a new extended model type for database storage adapters.
@@ -226,6 +234,17 @@ function($, window, undefined)
     return function(values) {
       var el = new $.mvc.modelDb(name, obj);
       if (values && $.isObject(values)) { el.set(values); }
+
+      // create prototype and clone method
+      el.prototype = $.mvc.modelDb.prototype;
+      el.prototype.clone = function()
+      {
+        var clone = new $.mvc.modelDb(name, obj);
+        clone.prototype = el.prototype;
+        clone.set(this.getData());
+        return clone;
+      };
+
       return el;
     }
   };
