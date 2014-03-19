@@ -130,7 +130,7 @@ function($, window, undefined)
 
   /**
    * Returns data keynames = all public attributes, which doesn't start with underscore(s).
-   * This function relies on coorect attribute names!
+   * This function relies on correct attribute names!
    * @returns {Array}
    * @this $.mvc.modelDb
    */
@@ -139,6 +139,40 @@ function($, window, undefined)
       return this.hasOwnProperty(key) && key.substr(0,1) !== '_'
         && key !== 'modelName' && key !== 'tableName' && !$.isFunction(this[key]);
     }, this);
+  };
+
+
+  /**
+   * Returns a clone of the model data (only a light clone!)
+   * @return {Object} data object with cloned attributes
+   */
+  $.mvc.modelDb.prototype.getData = function() {
+    var back = {}, self=this;
+    this.getDataKeys().forEach(function(key)
+    {
+      var el = self[key], type = $.typeOf(el), val;
+
+      if ('Date' === type)
+      {
+        val = new Date( el.getTime() );
+      }
+      else if ('Array' === type)
+      {
+        val = el.slice(0);
+      }
+      else if ('Object' === type)
+      {
+        val = $.extend({}, el);
+      }
+      else
+      {
+        val = el;
+      }
+
+      back[key] = val;
+    });
+
+    return back;
   };
 
 
