@@ -63,14 +63,17 @@ function($, window, undefined)
    */
   $.mvc.modelDb.prototype.get = function(id, callback)
   {
-    var self=this,
-      el = new $.mvc.modelDb(this.modelName, this.getBaseOptions()),
+    var
+      self=this,
       storageAdapter = this.getStorageAdapter();
 
     storageAdapter.get.call(storageAdapter, id, function(obj) {
+      var el;
+
       if (obj)
       {
-        el = $.extend(el, obj);
+        el = self.createNew();
+        $.extend(el, obj);
         el.modelName = self.modelName;
         el.id = id;
       }
@@ -80,7 +83,7 @@ function($, window, undefined)
       }
 
       return (callback && $.isFunction(callback)) ? callback(el) : el;
-    }, el);
+    }, this);
   };
 
   /**
@@ -92,10 +95,9 @@ function($, window, undefined)
    * @this $.mvc.modelDb
    */
   $.mvc.modelDb.prototype.getAll = function(callback){
-    var el = new $.mvc.modelDb(this.modelName, this.getBaseOptions()),
-    storageAdapter = this.getStorageAdapter();
+    var storageAdapter = this.getStorageAdapter();
 
-    return storageAdapter.getAll.call(storageAdapter, this.modelName, callback, el);
+    return storageAdapter.getAll.call(storageAdapter, this.modelName, callback, this);
   };
 
   /**
@@ -202,12 +204,27 @@ function($, window, undefined)
     storageAdapter.search.call(storageAdapter, el, search, callback, errorCallback);
   };
 
+
+  /**
+   * Returns a new - empty - object of the actual model
+   * @return {$.mvc.modelDb}
+   * @this $.mvc.modelDb
+   */
+  $.mvc.modelDb.prototype.createNew = function() {
+    return new $.mvc.modelDb(this.modelName, this.getBaseOptions());
+  };
+
+
   /**
    * Returns a clone of the actual model
    * @return {$.mvc.modelDb}
    * @this $.mvc.modelDb
    */
-  $.mvc.modelDb.prototype.clone = function() { /* will be overwritten in $.mvc.modelDb.extend factory */};
+  $.mvc.modelDb.prototype.clone = function() {
+    var clone = this.createNew();
+    $.extend(clone, this.getData());
+    return clone;
+  };
 
 
   /**
@@ -234,16 +251,6 @@ function($, window, undefined)
     return function(values) {
       var el = new $.mvc.modelDb(name, obj);
       if (values && $.isObject(values)) { el.set(values); }
-
-      // create prototype and clone method
-      el.prototype = $.mvc.modelDb.prototype;
-      el.prototype.clone = function()
-      {
-        var clone = new $.mvc.modelDb(name, obj);
-        clone.prototype = el.prototype;
-        clone.set(this.getData());
-        return clone;
-      };
 
       return el;
     }

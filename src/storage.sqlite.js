@@ -263,7 +263,7 @@ var SqliteStorageAdapter = (function($)
 
               if (results.rows.length > 0)
               {
-                el = $.extend({}, obj, results.rows.item(0));
+                el = $.extend({}, results.rows.item(0));
 
                 self._autoConvertDates.call(self, el, tableName, columns);
 
@@ -393,7 +393,7 @@ var SqliteStorageAdapter = (function($)
 
           for (var t=0; t < results.rows.length; t++)
           {
-            var el = $.extend({}, obj, results.rows.item(t));
+            var el = $.extend(obj.createNew(), results.rows.item(t));
 
             self._autoConvertDates.call(self, el, tableName, columns);
 
