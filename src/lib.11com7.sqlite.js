@@ -30,6 +30,7 @@
       autoInit : true,
       autoCollate : "NOCASE",
       autoCollateTypes : /^(?:CHAR|VARCHAR|TEXT|CHARACTER)/i,
+      autoDefault : true,
       dropOnInit : false,
       timestamp_create : 'dt_create',
       timestamp_change : 'dt_change',
@@ -1137,6 +1138,26 @@
 
     // TYPE: convert to sql type (needed for auto date magic handling)
     columnData[1] = $.db.getSqlColumnType(tableName, column);
+
+    // AUTO DEFAULT VALUE
+    if (options.autoDefault
+      && columnData[2].toUpperCase().indexOf('NOT NULL') > -1
+      && columnData[2].toUpperCase().indexOf('DEFAULT') === -1)
+    {
+      var sqlDefault;
+
+      if (columnData[1] === 'INTEGER' || columnData[1] === 'NUMERIC' || columnData[1] === 'REAL')
+      {
+        sqlDefault = '0';
+      }
+      // TEXT, BLOB, NONE
+      else
+      {
+        sqlDefault = "''";
+      }
+
+      columnData[2] += ' DEFAULT ' + sqlDefault;
+    }
 
     return columnData.join(' ');
   }
