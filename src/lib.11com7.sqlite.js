@@ -997,20 +997,20 @@
   /**
    * Creates a table entity in the database.
    * @param {SQLTransaction} tx transaction object
-   * @param {String} name table name
+   * @param {String} tableName table name
    * @param {Boolean} [force] (default: false); DROPS the table if true!
    */
-  $.db.createTable = function(tx, name, force)
+  $.db.createTable = function(tx, tableName, force)
   {
     var sql;
 
     if (!!options.dropOnInit || !!force)
     {
-      sql = $.template(SQL_DROP_TABLE, {'table' : name});
+      sql = $.template(SQL_DROP_TABLE, {'table' : tableName});
       $.db.executeSql(tx, sql);
     }
 
-    sql = $.template(SQL_CREATE_TABLE, {'table' : name, 'fields' : _getSqlTableColumns(name), 'constraints' : _getSqlTableConstraints(name) });
+    sql = $.db.getSqlTable(tableName);
     $.db.executeSql(tx, sql);
   };
 
@@ -1083,7 +1083,7 @@
 
   /**
    * Returns sql string with column definition statement.
-   * @param tableName
+   * @param {String} tableName table name
    * @return {String}
    * @private
    */
@@ -1093,12 +1093,7 @@
 
     for (t=0; t < columns.length; t++)
     {
-      var columnData = _getColumnData(tableName, columns[t]).slice(0); // <-- CREATE COPY!
-
-      // TYPE: convert to sql type (needed for auto date magic handling)
-      columnData[1] = $.db.getSqlColumnType(tableName, columns[t]);
-
-      sqlColumns.push(columnData.join(" "));
+      sqlColumns.push( $.db.getSqlColumn(tableName, columns[t]) );
     }
 
     return sqlColumns.join(", ");
@@ -1106,7 +1101,7 @@
 
   /**
    * Returns sql string with table constraints definitions.
-   * @param tableName
+   * @param {String} tableName table name
    * @return {String}
    * @private
    */
@@ -1114,6 +1109,50 @@
   {
     return (tables[tableName].constraints && tables[tableName].constraints.length > 0) ? ", " + tables[tableName].constraints.join(", ") : '';
   }
+
+
+  // ===================================================================================================================
+  // DB SQL
+  // ===================================================================================================================
+  /**
+   * Returns a SQL string for a (existing) table.
+   * @param {String} tableName table name
+   * @return {String}
+   */
+  $.db.getSqlTable = function(tableName)
+  {
+    return $.template(SQL_CREATE_TABLE, {'table' : tableName, 'fields' : _getSqlTableColumns(tableName), 'constraints' : _getSqlTableConstraints(tableName) });
+  }
+
+
+  /**
+   * Returns a SQL string for a (existing) table#column.
+   * @param {String} tableName table name
+   * @param {String} column column name
+   * @return {String}
+   */
+  $.db.getSqlColumn = function(tableName, column)
+  {
+    var columnData = _getColumnData(tableName, column).slice(0); // <-- CREATE COPY!
+
+    // TYPE: convert to sql type (needed for auto date magic handling)
+    columnData[1] = $.db.getSqlColumnType(tableName, column);
+
+    return columnData.join(' ');
+  }
+
+
+  /**
+   * Returns a SQLite type (DATE/TIME types will be changed to the SQLite type affinity of options.timestamp_type).
+   * @param {String} tableName !must exists!
+   * @param {String} column !must exists!
+   * @return {String} SQLite type
+   */
+  $.db.getSqlColumnType = function(tableName, column)
+  {
+    var colType = $.db.getColumnType(tableName, column);
+    return $.db.getTypeAffinity(_isDateType(colType) ? options.timestamp_type : colType);
+  };
 
 
   // ===================================================================================================================
@@ -1672,19 +1711,6 @@
     if (type.indexOf("REAL") > -1 ||type.indexOf("FLOA") > -1 ||type.indexOf("DOUB") > -1)  { return "REAL"; }
 
     return "NUMERIC";
-  };
-
-
-  /**
-   * Returns a SQLite type (DATE/TIME types will be changed to the SQLite type affinity of options.timestamp_type).
-   * @param {String} tableName !must exists!
-   * @param {String} column !must exists!
-   * @return {String} SQLite type
-   */
-  $.db.getSqlColumnType = function(tableName, column)
-  {
-    var colType = $.db.getColumnType(tableName, column);
-    return $.db.getTypeAffinity(_isDateType(colType) ? options.timestamp_type : colType);
   };
 
 
