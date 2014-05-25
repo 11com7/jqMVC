@@ -2,13 +2,13 @@
 /**
  * DbQuery - This class allows to create different queries with simple array structures.
  *
- * Copyright 2012 11com7, Bonn, Germany
+ * Copyright 2012 11com7, Bornheim, Germany
  * @author Dominik Pesch <d.pesch@11com7.de>
  * @since 2012-11-01
  */
 (function($, window, undefined)
 {
-  "use strict";
+  'use strict';
 
   /**
    * $.SqlClause - wraps sql clause strings with parameter values in an object and could be passed to $.DbQuery().

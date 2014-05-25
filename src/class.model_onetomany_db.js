@@ -2,7 +2,7 @@
 /**
  * ModelOneToManyDb - an extended jqMVC model class for sqlite database models with one-to-many relations.
  *
- * Copyright 2013 11com7, Bonn, Germany
+ * Copyright 2013 11com7, Bornheim, Germany
  * @author Dominik Pesch <d.pesch@11com7.de>
  * @since 2013-02-17
  */
@@ -15,7 +15,7 @@
  */
 function($, window, undefined)
 {
-  "use strict";
+  'use strict';
 
   /**
    * Internal extended model base class for one-to-many relations.
@@ -74,7 +74,7 @@ function($, window, undefined)
     }
 
     var newChild = $.extend(new this._childClass(), obj);
-    newChild.id = 0; // set as »new« object
+    newChild.id = 0; // set as ï¿½newï¿½ object
     newChild[this._childForeignKey] = this.id;
 
     newChild.save( function(newObj) { self._addChildSaved.call(self, newObj, callback) } );

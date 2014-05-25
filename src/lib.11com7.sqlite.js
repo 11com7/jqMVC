@@ -2,7 +2,7 @@
 /**
  * db - Database-Connector/Helper for SQLite
  *
- * Copyright (c) 2012 11com7, Bonn, Germany
+ * Copyright (c) 2012 11com7, Bornheim, Germany
  * Released under the MIT license
  * http://opensource.org/licenses/mit-license.php
  *
@@ -17,7 +17,7 @@
  */
  function($, window, undefined)
 {
-  "use strict";
+  'use strict';
 
   // Privates
   var

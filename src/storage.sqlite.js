@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 /**
  * SqliteStorageAdapter - manages model data in a SQLite database.

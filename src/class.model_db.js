@@ -1,7 +1,7 @@
 /**
  * ModelDb - an extended afMVC model class for sqlite database models
  *
- * Copyright 2012 11com7, Bonn, Germany
+ * Copyright 2012 11com7, Bornheim, Germany
  * @author Dominik Pesch <d.pesch@11com7.de>
  * @since 2012-11-27
  * @memberOf af.mvc
@@ -14,7 +14,7 @@
  */
 function($, window, undefined)
 {
-  "use strict";
+  'use strict';
 
   /**
    * Internal extended model base class.

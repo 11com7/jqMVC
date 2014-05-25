@@ -5,7 +5,7 @@
  */
 af.DbUpdater = (function(/** af */ $)
 {
-  "use strict";
+  'use strict';
 
 
   /**
