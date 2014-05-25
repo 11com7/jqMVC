@@ -10,6 +10,15 @@
  * @since 2012-09-30
  * @namespace af
  */
+
+/**
+ * Events:
+ * SQL:open               when the database is opened
+ * SQL:close              when the database is closed
+ * SQL:dropDatabase       when dropDatabase() starts to delete every data table
+ * SQL:drop:<tablename>   when dropDatabase() starts to delete the table <tablename>
+ */
+
 (/**
  * @param {af} $
  * @param {Window} window
@@ -1398,6 +1407,8 @@
       // SUCCESS
       function(tx, results)
       {
+        _trigger('SQL:dropDatabase');
+
         // ignore this entities
         var
           ignoreNames =
@@ -1416,6 +1427,7 @@
           var name = results.rows.item(t).name;
           if (!ignoreNames.hasOwnProperty(name))
           {
+            _trigger('SQL:drop:' + name);
             $.db.executeSql(tx, "DROP " + results.rows.item(t).type + " IF EXISTS " + name, null);
           }
           else if(name === $.db.SQLITE_TABLE_AUTOINCREMENT)
