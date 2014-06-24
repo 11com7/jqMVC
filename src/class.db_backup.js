@@ -171,10 +171,12 @@
        * @param {function} successCallback
        * @param {function(Number|String, String)} errorCallback
        * @param {Object} [opts]
+       * @param {Boolean} [opts.dropDatabase=true]  TRUE: drops the database before restore; FALSE: only restore
        */
       restore : function(dump, successCallback, errorCallback, opts)
       {
         opts = $.isObject(opts) ? opts : {};
+        opts['dropDatabase'] = opts.hasOwnProperty('dropDatabase') ? !!opts.dropDatabase : true;
 
 
         // --------------------------------------------------------------------------------
@@ -197,48 +199,16 @@
         db.getDatabase().transaction(
           function(tx)
           {
-            var t;
-
-            // create tables
-            for (t = 0; t < data.sql.tables.length; t++)
+            // DROP BEFORE RESTORE
+            if (!!opts.dropDatabase)
             {
-              db.executeSql(tx, data.sql.tables[t]);
+              db.dropDatabase(tx, function() { _restore(tx); });
             }
-
-            // create triggers
-            for (t = 0; t < data.sql.triggers.length; t++)
+            // ONLY RESTORE
+            else
             {
-              db.executeSql(tx, data.sql.triggers[t]);
+              _restore(tx);
             }
-
-            // create indexs
-            for (t = 0; t < data.sql.indexes.length; t++)
-            {
-              db.executeSql(tx, data.sql.indexes[t]);
-            }
-
-            // create views
-            for (t = 0; t < data.sql.views.length; t++)
-            {
-              db.executeSql(tx, data.sql.views[t]);
-            }
-
-            // insert data
-            if ($.isObject(data.data))
-            {
-              Object.keys(data.data).forEach(function(table)
-              {
-                var sql = 'INSERT OR IGNORE INTO ' + table
-                  + ' (' + data.tables[table].join(',') + ')'
-                  + ' VALUES (' + _repeat('?', data.tables[table].length, ',') + ')';
-
-                for (var t = 0; t < data.data[table].length; t++)
-                {
-                  db.executeSql(tx, sql, data.data[table][t]);
-                }
-              });
-            }
-
           },
           // TRANSACTION ERROR
           function(/** SQLError */ error)
@@ -256,6 +226,52 @@
         // --------------------------------------------------------------------------------
         // helper
         // --------------------------------------------------------------------------------
+        function _restore(tx)
+        {
+          var t;
+
+          // create tables
+          for (t = 0; t < data.sql.tables.length; t++)
+          {
+            db.executeSql(tx, data.sql.tables[t]);
+          }
+
+          // create triggers
+          for (t = 0; t < data.sql.triggers.length; t++)
+          {
+            db.executeSql(tx, data.sql.triggers[t]);
+          }
+
+          // create indexes
+          for (t = 0; t < data.sql.indexes.length; t++)
+          {
+            db.executeSql(tx, data.sql.indexes[t]);
+          }
+
+          // create views
+          for (t = 0; t < data.sql.views.length; t++)
+          {
+            db.executeSql(tx, data.sql.views[t]);
+          }
+
+          // insert data
+          if ($.isObject(data.data))
+          {
+            Object.keys(data.data).forEach(function(table)
+            {
+              var sql = 'INSERT OR IGNORE INTO ' + table
+                + ' (' + data.tables[table].join(',') + ')'
+                + ' VALUES (' + _repeat('?', data.tables[table].length, ',') + ')';
+
+              for (var t = 0; t < data.data[table].length; t++)
+              {
+                db.executeSql(tx, sql, data.data[table][t]);
+              }
+            });
+          }
+        }
+
+
         function _error(code, message)
         {
           if ($.isFunction(errorCallback))
@@ -327,6 +343,17 @@
         if (!_checkObjectKeys(data, ['sql', 'tables'], 'data')) { return false; }
         if (!_checkObjectKeys(data.sql, ['tables', 'indexes', 'triggers', 'views'], 'data.sql')) { return false; }
 
+        if ($.isObject(data.data))
+        {
+          // check data tables vs tables
+          var tablesKeys = Object.keys(data.tables), dataKeys = Object.keys(data.data);
+          if (!_arrayEquals(tablesKeys, dataKeys))
+          {
+            errorCallback('Error', 'data tables (' + dataKeys.join(', ') + ') unequal tables (' + tablesKeys.join(', ') + ')');
+            return false;
+          }
+        }
+
         // should be ok
         return true;
 
@@ -340,6 +367,17 @@
               errorCallback('Error', 'missing key \'' + key + '\' in ' + errorPath);
             }
             return keyExists;
+          });
+        }
+
+        function _arrayEquals(arr1, arr2)
+        {
+          if (arr1.length !== arr2.length)  { return false; }
+
+          var a1 = arr1.slice().sort(), a2 = arr2.slice().sort();
+          return a1.every(function(val1, t)
+          {
+            return val1 === a2[t];
           });
         }
       },
