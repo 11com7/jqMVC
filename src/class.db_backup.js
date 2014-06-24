@@ -56,7 +56,17 @@
         $db : null
       },
 
-      dump : function(opts)
+
+      /**
+       * Dumps the database (structure and/or data).
+       * @param {function(Object|String|*)} [successCallback] (function) will be called after the data will be dumped;
+       *                                                      the data will be formatted with the given formatter
+       *                                                      (no function) only the structure will be returned
+       * @param {Object} [opts]
+       * @param {String} [opts.formatter='json']  a formatter (from $.DbBackup.prototype.formatter[])
+       * @returns {*|undefined}
+       */
+      dump : function(successCallback, opts)
       {
         opts = $.extend({}, opts);
 
@@ -87,27 +97,6 @@
           var cols = self._$db.getColumns(table);
 
           dump.tables[table] = cols.slice(0);
-
-          dump.rowData[table] = [];
-
-          self._$db.executeSql(null, 'SELECT * FROM ' + table, [],
-            // SUCCESS
-            function(tx, /** SQLResultSet */ results)
-            {
-              for (var t = 0; t < results.rows.length; t++)
-              {
-                var row = results.rows.item(t), dRow = [];
-
-                for (var tt = 0; tt < cols.length; tt++)
-                {
-                  dRow.push( row[ cols[tt] ] );
-                }
-
-                dump.rowData[table].push( dRow );
-              }
-            }
-          );
-
         });
 
         // dump triggers
@@ -129,9 +118,55 @@
         });
 
 
-        return formatter(dump);
+        if (!$.isFunction(successCallback)) { return formatter(dump); }
+
+
+        // asynchronous data dump
+        _dumpNext(tables);
+
+
+        function _dumpNext(tables)
+        {
+          if (!tables.length) { successCallback(formatter(dump)); return; }
+
+          var table = tables.shift();
+          window.setTimeout(function()
+          {
+            dump.data[table] = [];
+            var cols = self._$db.getColumns(table);
+            self._$db.executeSql(null, 'SELECT * FROM ' + table, [],
+              // SUCCESS
+              function(tx, /** SQLResultSet */ results)
+              {
+                for (var t = 0; t < results.rows.length; t++)
+                {
+                  var row = results.rows.item(t), dRow = [];
+
+                  for (var tt = 0; tt < cols.length; tt++)
+                  {
+                    dRow.push( row[ cols[tt] ] );
+                  }
+
+                  dump.data[table].push( dRow );
+                }
+
+                _dumpNext(tables);
+              },
+              // ERROR
+              function(tx, /** SQLError */ errors)
+              {
+                dump.errors[table] = '[' + errors.code + ']: ' + errors.message;
+                _dumpNext(tables);
+              }
+            );
+          }, 0);
+
+        }
       },
 
+      /**
+       * @namespace
+       */
       formatter :
       {
         raw : function(data)
@@ -228,7 +263,15 @@
        * { table1 : [[data1], [...]], tableN : [...] }
        * @type {{}}
        */
-      this.rowData = {};
+      this.data = {};
+
+
+      /**
+       * { table1 : error1, ...:..., tableN : errorN }
+       * only tables with errors will be added to this error object.
+       * @type {Object.<String>}
+       */
+      this.errors = {};
     };
 
   })(af, window);
