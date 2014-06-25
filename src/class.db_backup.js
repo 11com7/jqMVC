@@ -15,41 +15,38 @@
     'use strict';
 
     // ===================================================================================================================
-    // class $.DbBackup
+    // class DbBackup
     // ===================================================================================================================
     //noinspection FunctionWithInconsistentReturnsJS,JSValidateJSDoc
     /**
-     *
-     * @param opts
-     * @returns {af.DbBackup}
+     * Database-Backup to store and restore SQL databases.
+     * @param {Object} [opts]
+     * @param {Object} [opts.$db] accepts a $.db object or use $.db by default
+     * @returns {DbBackup}
      * @constructor
-     * @this af.DbBackup
+     * @exports DbBackup as af.DbBackup
      */
-    $.DbBackup = function(opts)
+    var DbBackup = function(opts)
     {
-      if (!(this instanceof $.DbBackup)) { return new $.DbBackup(opts); }
-
-
+      if (!(this instanceof DbBackup)) { return new DbBackup(opts); }
 
       /**
        * internal options.
        * @type {Object}
        */
-      this._options = $.extend({}, $.DbBackup.defaultOptions, opts);
-
-      this._$db = this._options.$db || $.db;
-
+      this._options = $.extend({}, DbBackup.defaultOptions, opts);
+      this._$db = this._options['$db'] || $.db;
     };
 
     // --------------------------------------------------------------------------------
     // prototype
     // --------------------------------------------------------------------------------
     /**
-     * @this af.DbBackup
+     * @this DbBackup
      */
-    $.DbBackup.prototype =
+    DbBackup.prototype =
     {
-      constructor : $.DbBackup,
+      constructor : DbBackup,
 
       defaultOptions :
       {
@@ -58,12 +55,12 @@
 
 
       /**
-       * Dumps the database (structure and/or data).
+       * Stores the database (structure and/or data) into a dump (JSON or Object).
        * @param {function(Object|String|*)} [successCallback] (function) will be called after the data will be dumped;
        *                                                      the data will be formatted with the given formatter
        *                                                      (no function) only the structure will be returned
        * @param {Object} [opts]
-       * @param {String} [opts.formatter='json']  a formatter (from $.DbBackup.prototype.formatter[])
+       * @param {String} [opts.formatter='json']  a formatter (from DbBackup.prototype.formatter[])
        * @returns {*|undefined}
        */
       dump : function(successCallback, opts)
@@ -72,7 +69,7 @@
 
         var
           self = this,
-          dump = new $.DbBackup.Data(),
+          dump = new DbBackup.Data(),
           formatter = this.formatter.json;
 
         //
@@ -166,7 +163,11 @@
 
 
       /**
-       *
+       * Restore a database backup (drops the database first and then restore it).
+       * The backup data wil be roughly checked before the restore. The restore will use the same transaction for
+       * drop database and restore. All data will be inserted with INSERT OR IGNORE, but the whole restore transaction
+       * (with dropDatabase) will be rolled back on errors.
+       * 
        * @param {String|Object} dump
        * @param {function} successCallback
        * @param {function(Number|String, String)} errorCallback
@@ -301,7 +302,7 @@
        * @param {String|Object} dump  (Object) will be returned
        *                              (String) expects a JSON string which will be parsed
        * @param {function(Number|String, String)} errorCallback will be called on errors (parse OR TypeError)
-       * @returns {$.DbBackup.Data|boolean}  (Object) dump as object
+       * @returns {DbBackup.Data|boolean}  (Object) dump as object
        *                            (boolean) false if the data ca
        * @private
        */
@@ -451,16 +452,16 @@
 
 
     // ===================================================================================================================
-    // class $.DbBackup.Data
+    // class DbBackup.Data
     // ===================================================================================================================
     //noinspection FunctionWithInconsistentReturnsJS,JSValidateJSDoc
     /**
      * @returns {af.DbBackup.Data}
      * @constructor
      */
-    $.DbBackup.Data = function()
+    DbBackup.Data = function()
     {
-      if (!(this instanceof $.DbBackup.Data)) { return new $.DbBackup.Data(); }
+      if (!(this instanceof DbBackup.Data)) { return new DbBackup.Data(); }
 
       /**
        * sql-structure-backup.
@@ -507,4 +508,9 @@
       if (obj === null) { return 'null'; }
       return Object.prototype.toString.call(obj).slice(8, -1);
     }
+
+    /**
+     * @type {DbBackup}
+     */
+    $.DbBackup = DbBackup;
   })(af, window);
