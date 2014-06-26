@@ -125,16 +125,12 @@
    */
   $.DbQuery = function(tableName, options)
   {
-    if (!tableName || tableName == "" || typeof tableName !== "string")
-    {
-      throw new Error("parameter tableName is missing or empty");
-    }
-
     /**
      * @type {String}
      * @private
      */
-    this._table = tableName;
+    this._table = '';
+    this.setTableName(tableName);
 
     /**
      * sqlite library object.
@@ -175,6 +171,9 @@
 
 
   //noinspection FunctionWithInconsistentReturnsJS,JSUnusedGlobalSymbols
+  /**
+   * @this $.DbQuery
+   */
   $.DbQuery.prototype =
   {
     constructor : $.DbQuery,
@@ -271,16 +270,16 @@
     // COUNT
     // ================================================================================================================
     /**
-     *
-     * @param {Object} search  search object
-     * @param {Array} search.filter filter array (empty array returns all entries)
+     * Counts some or all entries.
+     * @param {Object} [search]  search object
+     * @param {Array} [search.filter] filter array (empty array counts all entries)
      * @param {String} [search.operator='AND']
-     * @param {function(SQLTransaction, SQLResultSet)} successCallback
+     * @param {function(value)} successCallback
      * @param {function(SQLTransaction, SQLError)} [errorCallback]
      */
     count : function(search, successCallback, errorCallback)
     {
-      if (!$.isObject(search) || !search.filter) { throw new Error("Need search object:{filter, [operator]}"); }
+      if (!$.isObject(search) || !search.filter) { search = { filter : [] }; }
 
       this.prepareCount(search);
       this.executeOneValue(successCallback, errorCallback);
@@ -370,7 +369,7 @@
     /**
      * This function executes the actual SQL command.
      * They had to be build with one of the buildXyz()-methods.
-     * @param {function(SQLTransaction, SQLResultSet)} [successCallback]
+     * @param {function(value)} [successCallback]
      * @param {function(SQLTransaction, SQLError)} [errorCallback]
      */
     executeOneValue : function(successCallback, errorCallback)
@@ -386,8 +385,9 @@
               var value = null;
               if (results.rows.length)
               {
-                value = $.map(results.rows.item(0), function(val) { return val; });
-                value = value[0][0];
+                // get first key
+                value = results.rows.item(0);
+                value = value[ Object.keys(value)[0] ];
               }
 
               if ($.isFunction(successCallback)) { successCallback(value); }
@@ -421,6 +421,20 @@
     {
       this._db = db;
       this._database = db.getDatabase();
+    },
+
+    /**
+     * Sets / changes the table (or view) name.
+     * @return {String}
+     */
+    setTableName : function(tableName)
+    {
+      if (!tableName || tableName == "" || typeof tableName !== "string")
+      {
+        throw new Error("parameter tableName is missing or empty");
+      }
+
+      this._table = tableName;
     },
 
     /**
@@ -977,7 +991,7 @@
   //noinspection SpellCheckingInspection
   /**
    * Return TRUE if test is a numeric value.
-   * @author Christian C. Salvad�
+   * @author Christian C. Salvadó
    * @see http://stackoverflow.com/a/1830844
    * @param {*} test
    * @return {Boolean}
