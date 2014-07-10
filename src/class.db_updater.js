@@ -364,10 +364,7 @@ af.DbUpdater = (function(/** af */ $)
 
       this._status = STATUS_INIT;
 
-      if ($.isFunction(readyCallback))
-      {
-        this._reExecFunctions = [readyCallback];
-      }
+      this._reExecFunctions = $.isFunction(readyCallback) ? [readyCallback] : [];
 
       return this.execute();
     },
@@ -538,7 +535,10 @@ af.DbUpdater = (function(/** af */ $)
         $.trigger(this, EVENT_READY);
       }
 
-      var readyFuncs = (!this._alreadyExecuted || this._options.recallReadyFunctionsOnReExecute) ? this._readyFuncs : this._reExecFunctions;
+      var readyFuncs = (!this._alreadyExecuted || this._options.recallReadyFunctionsOnReExecute) ?
+        this._readyFuncs.concat(this._reExecFunctions) :
+        this._reExecFunctions;
+
       this._prepareExecution(0, readyFuncs);
 
       var self = this;
