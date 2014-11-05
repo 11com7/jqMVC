@@ -1,7 +1,6 @@
 /**
  * @fileOverview af.DbUpdater class
  * @namespace af
- * @class af.DbUpdater
  */
 af.DbUpdater = (function(/** af */ $)
 {
@@ -78,8 +77,9 @@ af.DbUpdater = (function(/** af */ $)
 
 
   /**
-   * @name af.DbUpdater
-   * @this af.DbUpdater.prototype
+   * @class DbUpdater
+   * @namespace af.DbUpdater
+   * @this DbUpdater.prototype
    * @param {$.db} db
    * @param {af.DbUpdater.defaultOptions} [options]
    */
@@ -95,7 +95,7 @@ af.DbUpdater = (function(/** af */ $)
     this._db = db || $.db;
 
     /**
-     * @type {af.DbUpdater.defaultOptions}
+     * @type {DbUpdater.prototype.defaultOptions}
      */
     this._options = $.extend({}, this.defaultOptions, options);
     if (!$.isFunction(this._options.debugFunc)) { this._options.debugFunc = function() {}; }
@@ -180,6 +180,12 @@ af.DbUpdater = (function(/** af */ $)
      */
     this._runTick = 0;
 
+    /**
+     * Runtime information (could be retrieved with runtimeInfo()).
+     * @type {{start:int, version:int, ready: int}}
+     */
+    this._runtimeInfo = {};
+    this.resetRuntimeInfo();
 
     this._db.addTable(this._options.versionTable,
       [
@@ -194,8 +200,8 @@ af.DbUpdater = (function(/** af */ $)
 
 
   /**
-   * @name af.DbUpdater.prototype
-   * @this af.DbUpdater.prototype
+   * @extends DbUpdater.prototype
+   * @namespace af.DbUpdater
    */
   DbUpdater.prototype =
   {
@@ -210,6 +216,7 @@ af.DbUpdater = (function(/** af */ $)
     /**
      * @param {function(SQLTransaction)} func
      * @return {DbUpdater}
+     * @this DbUpdater
      */
     addInitFunction : function(func)
     {
@@ -295,6 +302,12 @@ af.DbUpdater = (function(/** af */ $)
        */
       var self = this;
 
+      this.runtimeInfo({
+        time_start : new Date().getTime(),
+        time_done : 0,
+        info : 'execute'
+      });
+
       // get version number -> no version table ==> init ELSE update
       this._openDatabase();
       this._database.transaction(
@@ -366,6 +379,9 @@ af.DbUpdater = (function(/** af */ $)
 
       this._reExecFunction = $.isFunction(readyCallback) ? readyCallback : false;
 
+      this.resetRuntimeInfo();
+      this.runtimeInfo('info', 'reExecute');
+
       return this.execute();
     },
 
@@ -390,6 +406,8 @@ af.DbUpdater = (function(/** af */ $)
         this._initVersionFuncAdded = true;
       }
 
+      this.runtimeInfo('info', 'init');
+
       this._prepareExecution.call(this, 0, this._initFuncs);
       this._startExecution( $.proxy(this._prepareReadyCallbacks, this) );
     },
@@ -399,6 +417,9 @@ af.DbUpdater = (function(/** af */ $)
     {
       this.dbg("found version number", version, "=> type UPDATE");
       this._type = TYPE_UPDATE;
+
+      this.runtimeInfo('info', 'update:'+version);
+
       this._prepareExecution.call(this, version, this._updateFuncs);
       this._startExecution( $.proxy(this._prepareReadyCallbacks, this) );
     },
@@ -453,6 +474,11 @@ af.DbUpdater = (function(/** af */ $)
         version = func[0];
         func = func[1];
 
+        this.runtimeInfo({
+          version : version,
+          info : 'next'
+        });
+
         this.dbg("execute version: #" + version);
 
         var self = this;
@@ -473,7 +499,7 @@ af.DbUpdater = (function(/** af */ $)
 
             if ($.isFunction(self._options.errorFunc))
             {
-              self._options.errorFunc.call(null, error);
+              self._options.errorFunc.call( self.runtimeInfo(), error);
             }
             else
             {
@@ -529,6 +555,7 @@ af.DbUpdater = (function(/** af */ $)
     {
       this.dbg("==> READY -->", (!this._alreadyExecuted || this._options.recallReadyFunctionsOnReExecute) ? '' : "don't" , "call ready functions");
       this._status = STATUS_READY;
+      this.runtimeInfo('info', 'ready');
 
       if (!this._alreadyExecuted_alreadyExecuted || this._options.triggerEventsOnReExecute)
       {
@@ -551,6 +578,11 @@ af.DbUpdater = (function(/** af */ $)
         self._status = STATUS_DONE;
         this._alreadyExecuted = true;
 
+        self.runtimeInfo({
+          time_done : new Date().getDate(),
+          info : 'done'
+        });
+
         if (self._reExecFunction && $.isFunction(self._reExecFunction))
         {
           self._reExecFunction();
@@ -570,6 +602,71 @@ af.DbUpdater = (function(/** af */ $)
       var debugMsgs = Array.prototype.slice.call(arguments);
       debugMsgs.unshift("DbUpdater: ");
       this._options.debugFunc.apply(null, debugMsgs);
+    },
+
+    // --------------------------------------------------------------------------------
+    // STATUS
+    // --------------------------------------------------------------------------------
+    /**
+     * Getter/Setter for dbUpdater runtime informations.
+     * These informations should help to identify errors.
+     *
+     * @param {Object|String} [opts]  (String) for key getter/setter
+     * @param {*} [value]
+     * @returns {*|Object|null}
+     */
+    runtimeInfo : function(opts, value)
+    {
+      this._runtimeInfo.status = this._status; // always refresh status on call!
+
+      // getter
+      if (0 === arguments.length)
+      {
+        return $.extend({}, this._runtimeInfo);
+      }
+      // key getter
+      else if (1 === arguments.length && $.isString(opts) && '' !== opts)
+      {
+        if (!this._runtimeInfo.hasOwnProperty(opts)) { new TypeError("{String} opts has to be a valid/existing key, instead of '" + opts + "'"); }
+        return this._runtimeInfo[opts];
+      }
+      // key-value-setter
+      else if (2 === arguments.length)
+      {
+        if ('' == opts) { throw new TypeError('opts has to be a non empty string');}
+        var key = opts;
+        opts = {};
+        opts[key] = value;
+      }
+
+      // object setter
+      if (!$.isObject(opts)) { throw new TypeError('one argument call, has to be String (non-empty, existing key)|Object instead of ' + (typeof opts)); }
+      if (opts.hasOwnProperty('status')) { this.dbg('status will be automatically updated! please don\'t set it!'); delete opts.status; }
+
+      // info
+      if (opts.hasOwnProperty('info'))
+      {
+        if (!$.isArray(this._runtimeInfo.info)) { this._runtimeInfo.info = []; }
+        this._runtimeInfo.info.push(opts['info']);
+        delete opts['info'];
+      }
+
+      $.extend(this._runtimeInfo, opts);
+    },
+
+    /**
+     * resets the runtime informations.
+     * will be called on init and reExecute.
+     */
+    resetRuntimeInfo : function()
+    {
+      this._runtimeInfo = {
+        version : -1,           // last executed version
+        status : this._status,  // status
+        time_start : 0,         // unix_time start
+        time_done : 0,          // unix_time end
+        info : []               // info stack
+      };
     },
 
     // --------------------------------------------------------------------------------
