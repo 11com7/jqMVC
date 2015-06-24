@@ -364,26 +364,35 @@ var SqliteStorageAdapter = (function($)
     // ===================================================================================================================
     // search
     // ===================================================================================================================
-    search:function(obj, search, callback, errorCallback)
+    /**
+     * Search for elements in the database
+     *
+     * @param {$.mvc.modelDb} obj empty model object
+     * @param {Object|Array} search (object) search-object (minimum: {filter: []}
+     * @param {Array} search.filter  filter array (empty array returns all entries)
+     * @param {Array|null} [search.columns=null]  (array) with existing columns, or $.SqlClause-Objects |
+     *                                            (null) for all columns
+     * @param {Number|Array|null} [search.limit=0]
+     * @param {String} [search.operator='AND']
+     * @param {String|Array} [search.order='']
+     * @param {function(Array)} successCallback
+     * @param {function(SQLError)} [errorCallback]
+     * @see $.DbQuery
+     * @throws $.db.SqlError
+     */
+    search : function(obj, search, successCallback, errorCallback)
     {
       var
         query = this._prepareDbQuery(obj),
         self = this;
 
-      try
-      {
-        if ($.isArray(search)) { search = { filter: search }; }
-        query.search(search, returnObjects, errorCallback);
-      }
-      catch(err)
-      {
-        throw $.db.SqlError(err, query.getSql());
-      }
+      if ($.isArray(search)) { search = { filter: search }; }
+      query.search(search, returnObjects, _error);
 
 
       function returnObjects(tx, results)
       {
-        if (callback && $.isFunction(callback))
+        if (successCallback && $.isFunction(successCallback))
         {
           var
             all = [],
@@ -400,10 +409,21 @@ var SqliteStorageAdapter = (function($)
             all.push(hasWakeUp ? el.__wakeup.call(el) : el);
           }
 
-          callback(all);
+          successCallback(all);
         }
       }
 
+      function _error(tx, sqlError)
+      {
+        if ($.isFunction(errorCallback))
+        {
+          errorCallback(sqlError);
+        }
+        else
+        {
+          throw $.db.SqlError(sqlError, query.getSql());
+        }
+      }
     },
 
 

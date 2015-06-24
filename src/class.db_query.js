@@ -96,15 +96,15 @@
    *
    * Queries are build with a filter/search array:<pre>
    * Simple:
-   *  ['a', '=', 1] => "WHERE a=?"; [1]
+   *  ['a', '=', 1]           => "WHERE a=?"; [1]
    *  ['b', 'between', "5,6"] => "WHERE b BETWEEN (?,?)"; [5, 6]
    *  ['b', 'between', [5,6]] => "WHERE b BETWEEN (?,?)"; [5, 6]
    *
    * With logic operators
-   *  [['a', '=', 1], ['b', '!=', 1]] => "WHERE (a = ?) AND (b != ?)"; [1, 1]
+   *  [['a', '=', 1], ['b', '!=', 1]]       => "WHERE (a = ?) AND (b != ?)"; [1, 1]
    *  [['a', '=', 1], ['b', '!=', 1, "OR"]] => "WHERE (a = ?) OR (b != ?)"; [1, 1]
    *  or with logicOperator = "OR"
-   *  [['a', '=', 1], ['b', '!=', 1]] => "WHERE (a = ?) OR (b != ?)"; [1, 1]
+   *  [['a', '=', 1], ['b', '!=', 1]]       => "WHERE (a = ?) OR (b != ?)"; [1, 1]
    *
    * With parenthesis
    * [['('], ['a', '=', 1], ['b', '!=', 1], [')'], ['c', 'IN', [6,7,8,9], "OR"]]
@@ -197,8 +197,8 @@
      * Builds and runs a sql query from search array and method parameter.
      * @param {Object} search
      * @param {Array} search.filter  filter array (empty array returns all entries)
-     * @param {Array|null} search.columns  (array) with existing columns, or $.SqlClause-Objects |
-     *                                    (null) for all columns
+     * @param {Array|null} [search.columns=null]  (array) with existing columns, or $.SqlClause-Objects |
+     *                                            (null) for all columns
      * @param {Number|Array|null} [search.limit=0]
      * @param {String} [search.operator='AND']
      * @param {String|Array} [search.order='']
@@ -207,6 +207,12 @@
      */
     search : function(search, successCallback, errorCallback)
     {
+      if ($.isArray(search))
+      {
+        //noinspection JSValidateTypes
+        search = { filter : search };
+      }
+
       if (!$.isObject(search) || !search.filter) { throw new Error("Need search object:{filter, [columns], [limit], [operator], [order]}"); }
 
       //noinspection JSUnresolvedVariable
