@@ -368,7 +368,8 @@ var SqliteStorageAdapter = (function($)
      * Search for elements in the database
      *
      * @param {$.mvc.modelDb} obj empty model object
-     * @param {Object|Array} search (object) search-object (minimum: {filter: []}
+     * @param {Object|Array} search (object) search-object (minimum: {filter: []};
+     *                              (array) filter array (empty array returns all entries)
      * @param {Array} search.filter  filter array (empty array returns all entries)
      * @param {Array|null} [search.columns=null]  (array) with existing columns, or $.SqlClause-Objects |
      *                                            (null) for all columns
