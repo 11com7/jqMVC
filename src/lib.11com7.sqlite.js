@@ -1334,23 +1334,8 @@
 
 
   // ===================================================================================================================
-  // DEBUG & EXCEPTIONS
+  // SQL SELECT HELPER
   // ===================================================================================================================
-  //noinspection JSCommentMatchesSignature
-  /**
-   * debugs any values to console.log (if exists && options.debug)
-   * @param {...*} arguments
-   * @memberOf db
-   */
-  db.dbg = function()
-  {
-    if (options.debug && console && console.log)
-    {
-      console.log.apply(console, arguments);
-    }
-  };
-
-
   /**
    * Executes a query and pass the results as Object[] to a successCallback.
    * @param {SQLTransaction|null} [tx] use existing SQLTransaction or (null) create a new transaction
@@ -1438,7 +1423,7 @@
   };
 
   /**
-   * Executes a query and passes the first column of the first result row (*) or NULL (no result) to the successCallback.
+   * Executes a query and passes the first field of the first result row (*) or NULL (no result) to the successCallback.
    * @param {SQLTransaction|null} [tx] use existing SQLTransaction or (null) create a new transaction
    * @param {String|af.SqlClause} sql (String) SQL-Clause; ($.SqlClause) SqlClause-Object with sql AND data/values
    * @param {null|Array|function(*|null)} [data]  (null|Array) data: sql values or empty;
@@ -1461,7 +1446,7 @@
     db.selectFirstRow(tx, sql, data, _success, errorCallback);
 
     /**
-     * @param {Object[]} results
+     * @param {Object} results
      * @private
      */
     function _success(results)
@@ -1469,6 +1454,47 @@
       if ($.isFunction(successCallback))
       {
         successCallback(!!results ? results[[Object.keys(results)[0]]] : null);
+      }
+    }
+  };
+
+  /**
+   * Executes a query and passes all first columns (*[]) or NULL (no result) to the successCallback.
+   * @param {SQLTransaction|null} [tx] use existing SQLTransaction or (null) create a new transaction
+   * @param {String|af.SqlClause} sql (String) SQL-Clause; ($.SqlClause) SqlClause-Object with sql AND data/values
+   * @param {null|Array|function(*[]|null)} [data]  (null|Array) data: sql values or empty;
+   *                                               (function()) successCallback (if no data is needed)
+   * @param {function(*[]|null)|function(tx, SQLException)} [successCallback] (function(*[]|null)) successCallback (if data is not a function);
+   *                                                                         (function(tx, SQLException)) errorCallback (if successCallback was passed in data)
+   *
+   * @param {function(tx, SQLException)} [errorCallback] errorCallback (will be called on SQLExceptions)
+   * @memberOf db
+   */
+  db.selectFirstColumn = function(tx, sql, data, successCallback, errorCallback)
+  {
+    if ($.isFunction(data))
+    {
+      errorCallback = $.isFunction(successCallback) ? successCallback : errorCallback;
+      successCallback = data;
+      data = [];
+    }
+
+    db.selectRows(tx, sql, data, _success, errorCallback);
+
+    /**
+     * @param {Object[]} results
+     * @private
+     */
+    function _success(results)
+    {
+      // get the first key of the first row object
+      var columnKey = results.length ? Object.keys(results[0])[0] : '';
+
+      if ($.isFunction(successCallback))
+      {
+        successCallback(results.map(function (row) {
+          return row[columnKey];
+        }));
       }
     }
   };
@@ -1516,8 +1542,8 @@
   function _checkIfHasLimitClause(sql)
   {
     var
-      // selects a limit clause which isn't quoted via ["] or ['], the trick: only the wanted match is marked as group (in (...))
-      // @see http://www.rexegg.com/regex-best-trick.html#thetrick
+    // selects a limit clause which isn't quoted via ["] or ['], the trick: only the wanted match is marked as group (in (...))
+    // @see http://www.rexegg.com/regex-best-trick.html#thetrick
       regEx = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|(\blimit(?:\s*(?:\d+|\?\d+|\?|[@$:][\w_]+)(?:\s*,\s*(?:[-]?\d+|\?\d+|\?|[@$:][\w_]+))?))/gi,
       results;
 
@@ -1528,6 +1554,24 @@
 
     return !!results && !!results[1];
   }
+
+
+  // ===================================================================================================================
+  // DEBUG & EXCEPTIONS
+  // ===================================================================================================================
+  //noinspection JSCommentMatchesSignature
+  /**
+   * debugs any values to console.log (if exists && options.debug)
+   * @param {...*} arguments
+   * @memberOf db
+   */
+  db.dbg = function()
+  {
+    if (options.debug && console && console.log)
+    {
+      console.log.apply(console, arguments);
+    }
+  };
 
 
   /**
