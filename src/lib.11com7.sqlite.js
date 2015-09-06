@@ -1350,6 +1350,78 @@
     }
   };
 
+
+  /**
+   * Executes a query and pass the results as Object[] to a successCallback.
+   * @param {SQLTransaction|null} [tx] use existing SQLTransaction or (null) create a new transaction
+   * @param {String|af.SqlClause} sql (String) SQL-Clause; ($.SqlClause) SqlClause-Object with sql AND data/values
+   * @param {null|Array|function(Object[])} [data]  (null|Array) data: sql values or empty;
+   *                                               (function()) successCallback (if no data is needed)
+   * @param {function(Object[])|function(tx, SQLException)} [successCallback] (function(Object[])) successCallback (if data is not a function);
+   *                                                                         (function(tx, SQLException)) errorCallback (if successCallback was passed in data)
+   *
+   * @param {function(tx, SQLException)} [errorCallback] errorCallback (will be called on SQLExceptions)
+   * @memberOf db
+   */
+  db.selectRows = function(tx, sql, data, successCallback, errorCallback)
+  {
+    if ($.isFunction(data))
+    {
+      errorCallback = $.isFunction(successCallback) ? successCallback : errorCallback;
+      successCallback = data;
+      data = [];
+    }
+
+    if (sql instanceof $.SqlClause)
+    {
+      data = sql.getValues();
+      sql = sql.getSql();
+    }
+
+    db.executeSql(tx, sql, data, _success, errorCallback);
+
+    /**
+     * @param {SQLTransaction} tx
+     * @param {SQLResultSet} results
+     * @private
+     */
+    function _success(tx, results)
+    {
+      var back = [];
+      for (var t = 0; t < results.rows.length; t++)
+      {
+        back.push(results.rows.item(t));
+      }
+
+      if ($.isFunction(successCallback))
+      {
+        successCallback(back);
+      }
+    }
+  },
+
+  /**
+   * Shows the result(s) of a query via console#log().
+   * @param {String|af.SqlClause} sql (String) SQL-Clause; ($.SqlClause) SqlClause-Object with sql AND data/values
+   * @param {null|Array} [data]  (null|Array) data: sql values or empty;
+   * @memberOf db
+   */
+  db.showRows = function(sql, data)
+  {
+    db.selectRows(null, sql, data,
+      // SuccessCallback
+      function (results) {
+        console.log(results);
+      },
+      // ErrorCallback
+      function (tx, error) {
+        console.log(db.SqlError(error, null));
+      }
+    );
+
+  };
+
+
   /**
    * (Factory) Creates a new Error/Exception object for a sql error.
    * This function will show the last sql statement, if db.executeSql() is used
