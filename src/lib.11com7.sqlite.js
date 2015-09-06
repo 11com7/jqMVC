@@ -1374,8 +1374,8 @@
 
     if (sql instanceof $.SqlClause)
     {
-      data = sql.getValues();
-      sql = sql.getSql();
+      data = sql.values();
+      sql = sql.get();
     }
 
     db.executeSql(tx, sql, data, _success, errorCallback);
@@ -1398,7 +1398,101 @@
         successCallback(back);
       }
     }
-  },
+  };
+
+  /**
+   * Executes a query and passes the first result row (object) or NULL (no result) to the successCallback.
+   * @param {SQLTransaction|null} [tx] use existing SQLTransaction or (null) create a new transaction
+   * @param {String|af.SqlClause} sql (String) SQL-Clause; ($.SqlClause) SqlClause-Object with sql AND data/values
+   * @param {null|Array|function(Object|null)} [data]  (null|Array) data: sql values or empty;
+   *                                               (function()) successCallback (if no data is needed)
+   * @param {function(Object|null)|function(tx, SQLException)} [successCallback] (function(Object|null)) successCallback (if data is not a function);
+   *                                                                         (function(tx, SQLException)) errorCallback (if successCallback was passed in data)
+   *
+   * @param {function(tx, SQLException)} [errorCallback] errorCallback (will be called on SQLExceptions)
+   * @memberOf db
+   */
+  db.selectFirstRow = function(tx, sql, data, successCallback, errorCallback)
+  {
+    if ($.isFunction(data))
+    {
+      errorCallback = $.isFunction(successCallback) ? successCallback : errorCallback;
+      successCallback = data;
+      data = [];
+    }
+
+    sql = _addLimit(sql, 1);
+    db.selectRows(tx, sql, data, _success, errorCallback);
+
+    /**
+     * @param {Object[]} results
+     * @private
+     */
+    function _success(results)
+    {
+      if ($.isFunction(successCallback))
+      {
+        successCallback(!!results && results.length ? results[0] : null);
+      }
+    }
+  };
+
+
+  /**
+   * (internal) adds a limit (and offset) if the query hasn't already a limit.
+   * @param {String|$.SqlClause} sql
+   * @param {Number|String} limit
+   * @param {Number|String} offset
+   * @returns {String|$.SqlClause}
+   * @private
+   */
+  function _addLimit(sql, limit, offset)
+  {
+    offset = typeof offset !== 'undefined' ? (', ' + offset) : '';
+
+    var sqlType = $.typeOf(sql), limitClause = ' LIMIT ' + limit + offset;
+    if ('String' === sqlType)
+    {
+      sql = _checkIfHasLimitClause(sql) ? sql : (sql + limitClause);
+    }
+    else if ('Object' === sqlType && sql instanceof $.SqlClause)
+    {
+      if (!_checkIfHasLimitClause(sql))
+      {
+        sql.set(sql.get() + limitClause);
+      }
+    }
+    else
+    {
+      throw new TypeError('sql has to be {String|$.SqlClause}, but was ' + sqlType);
+    }
+
+    return sql;
+  }
+
+  /**
+   * (internal) checks if a sql query has a limit.
+   * @param {String} sql
+   * @returns {boolean}
+   * @private
+   * @see http://www.sqlite.org/images/syntax/select-stmt.gif
+   */
+  function _checkIfHasLimitClause(sql)
+  {
+    var
+      // selects a limit clause which isn't quoted via ["] or ['], the trick: only the wanted match is marked as group (in (...))
+      // @see http://www.rexegg.com/regex-best-trick.html#thetrick
+      regEx = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|(\blimit(?:\s*(?:\d+|\?\d+|\?|[@$:][\w_]+)(?:\s*,\s*(?:[-]?\d+|\?\d+|\?|[@$:][\w_]+))?))/gi,
+      results;
+
+    // search ALL results until nothing could be found OR we've got a result for group 1 (in results[1]!)
+    // ==> this ignores results[0] (overall match) and stops only if nothing was found or we've got a result for group 1
+    while ((results = regEx.exec(''+sql)) !== null && !results[1])
+    {}
+
+    return !!results && !!results[1];
+  }
+
 
   /**
    * Shows the result(s) of a query via console#log().
