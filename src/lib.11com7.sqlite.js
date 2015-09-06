@@ -1411,14 +1411,21 @@
     db.selectRows(null, sql, data,
       // SuccessCallback
       function (results) {
-        console.log(results);
+        if ($.isFunction(console.group)) { console.group(); }
+        console.log('$.db.showRows():');
+        console.log(sqlLast, data);
+
+        //noinspection JSUnresolvedVariable
+        var tableFunc = !!console.table && $.isFunction(console.table) ? console.table : console.log;
+        tableFunc.call(console, results);
+
+        if ($.isFunction(console.groupEnd)) { console.groupEnd(); }
       },
       // ErrorCallback
       function (tx, error) {
         console.log(db.SqlError(error, null));
       }
     );
-
   };
 
 
