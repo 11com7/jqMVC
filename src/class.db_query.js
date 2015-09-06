@@ -6,7 +6,12 @@
  * @author Dominik Pesch <d.pesch@11com7.de>
  * @since 2012-11-01
  */
-(function($, window, undefined)
+(/**
+ * @param {af} $
+ * @param {Window} window
+ * @param {undefined} [undefined]
+ */
+function($, window, undefined)
 {
   'use strict';
 
