@@ -1437,6 +1437,42 @@
     }
   };
 
+  /**
+   * Executes a query and passes the first column of the first result row (*) or NULL (no result) to the successCallback.
+   * @param {SQLTransaction|null} [tx] use existing SQLTransaction or (null) create a new transaction
+   * @param {String|af.SqlClause} sql (String) SQL-Clause; ($.SqlClause) SqlClause-Object with sql AND data/values
+   * @param {null|Array|function(*|null)} [data]  (null|Array) data: sql values or empty;
+   *                                               (function()) successCallback (if no data is needed)
+   * @param {function(*|null)|function(tx, SQLException)} [successCallback] (function(*|null)) successCallback (if data is not a function);
+   *                                                                         (function(tx, SQLException)) errorCallback (if successCallback was passed in data)
+   *
+   * @param {function(tx, SQLException)} [errorCallback] errorCallback (will be called on SQLExceptions)
+   * @memberOf db
+   */
+  db.selectFirstField = function(tx, sql, data, successCallback, errorCallback)
+  {
+    if ($.isFunction(data))
+    {
+      errorCallback = $.isFunction(successCallback) ? successCallback : errorCallback;
+      successCallback = data;
+      data = [];
+    }
+
+    db.selectFirstRow(tx, sql, data, _success, errorCallback);
+
+    /**
+     * @param {Object[]} results
+     * @private
+     */
+    function _success(results)
+    {
+      if ($.isFunction(successCallback))
+      {
+        successCallback(!!results ? results[[Object.keys(results)[0]]] : null);
+      }
+    }
+  };
+
 
   /**
    * (internal) adds a limit (and offset) if the query hasn't already a limit.
