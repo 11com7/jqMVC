@@ -4,7 +4,7 @@
  * Copyright 2012 11com7, Bornheim, Germany
  * @author Dominik Pesch <d.pesch@11com7.de>
  * @since 2012-11-27
- * @memberOf af.mvc
+ * @namespace {object} af.mvc
  */
 (
 /**
@@ -27,8 +27,8 @@ function($, window, undefined)
    * @property {function|undefined} __remove (optional) can be set, as "magic" callback used by StorageAdapter.remove() to manipulate data before saving
    * @param {String} name of new model
    * @param {Object} opts default methods/properties
-   * @extends $.mvc.model
-   * @this $.mvc.modelDb
+   * @extends af.mvc.model
+   * @memberOf! af.mvc
    */
   $.mvc.modelDb = function(name, opts)
   {
@@ -40,6 +40,8 @@ function($, window, undefined)
     this.__save = undefined;
     this.__remove = undefined;
 
+
+    //noinspection JSUnresolvedVariable
     $.mvc.model.apply(this, arguments);
     this.tableName = opts.tableName || this.modelName;
 
@@ -49,9 +51,19 @@ function($, window, undefined)
     }
   };
 
-  //noinspection JSCheckFunctionSignatures
+  /**
+   * @memberOf! af.mvc.modelDb
+   */
   $.mvc.modelDb.prototype = new $.mvc.model();
+
+  /**
+   * @memberOf! af.mvc.modelDb
+   */
   $.mvc.modelDb.prototype.constructor = $.mvc.modelDb;
+
+  /**
+   * @memberOf! af.mvc.modelDb
+   */
   $.mvc.modelDb.prototype.SUPER = $.mvc.modelDb.prototype;
 
   /**
@@ -59,7 +71,7 @@ function($, window, undefined)
    * @param {Number} id
    * @param {function} [callback]
    * @return {Object} loaded object
-   * @this $.mvc.modelDb
+   * @memberOf! af.mvc.modelDb
    */
   $.mvc.modelDb.prototype.get = function(id, callback)
   {
@@ -92,7 +104,7 @@ function($, window, undefined)
    *
    * @param {function} [callback]
    * @return {Array}
-   * @this $.mvc.modelDb
+   * @memberOf af.mvc
    */
   $.mvc.modelDb.prototype.getAll = function(callback){
     var storageAdapter = this.getStorageAdapter();
@@ -104,7 +116,7 @@ function($, window, undefined)
    * Set properties on the model. You can pass in a key/value or an object of properties.
    * @param {Object|String} obj
    * @param {*} [value] only used if obj ist key string
-   * @this $.mvc.modelDb
+   * @memberOf af.mvc
    */
   $.mvc.modelDb.prototype.set = function(obj, value){
     var readOnlyVars = ["id", "modelName", "tableName", "SUPER", "prototype"];
@@ -134,7 +146,7 @@ function($, window, undefined)
    * Returns data keynames = all public attributes, which doesn't start with underscore(s).
    * This function relies on correct attribute names!
    * @returns {Array}
-   * @this $.mvc.modelDb
+   * @memberOf af.mvc
    */
   $.mvc.modelDb.prototype.getDataKeys = function() {
     return Object.keys(this).filter(function(key) {
@@ -148,6 +160,7 @@ function($, window, undefined)
   /**
    * Returns a clone of the model data (only a light clone!)
    * @return {Object} data object with cloned attributes
+   * @memberOf af.mvc
    */
   $.mvc.modelDb.prototype.getData = function() {
     var back = {}, self=this;
@@ -194,7 +207,7 @@ function($, window, undefined)
    * @param {Object} search
    * @param {function(Array.<Object|$.mvc.modelDb>)} callback Array with model objects
    * @param {function(SQLTransaction, SQLError)} errorCallback
-   * @this $.mvc.modelDb
+   * @memberOf af.mvc
    */
   $.mvc.modelDb.prototype.search = function(search, callback, errorCallback)
   {
@@ -208,7 +221,7 @@ function($, window, undefined)
   /**
    * Returns a new - empty - object of the actual model
    * @return {$.mvc.modelDb}
-   * @this $.mvc.modelDb
+   * @memberOf af.mvc
    */
   $.mvc.modelDb.prototype.createNew = function() {
     return new $.mvc.modelDb(this.modelName, this.getBaseOptions());
@@ -218,7 +231,7 @@ function($, window, undefined)
   /**
    * Returns a clone of the actual model
    * @return {$.mvc.modelDb}
-   * @this $.mvc.modelDb
+   * @memberOf af.mvc
    */
   $.mvc.modelDb.prototype.clone = function() {
     var clone = this.createNew();
@@ -237,7 +250,7 @@ function($, window, undefined)
    * @param {String} name
    * @param {Object} obj default methods/properties
    * @param {Object} [storageAdapter] - object implementing storageAdapter interface (look below for the default)
-   * @this $.mvc.modelDb
+   * @memberOf af.mvc
    */
   $.mvc.modelDb.extend = function(name, obj, storageAdapter) {
     // creates
@@ -259,12 +272,16 @@ function($, window, undefined)
 
   /**
    * @return {String} table name from tableName (or modelName).
-   * @this $.mvc.modelDb
+   * @memberOf af.mvc
    */
   $.mvc.modelDb.prototype.getTableName = function() {
     return (this.tableName) ? this.tableName : this.modelName;
   };
 
+  /**
+   * @returns {boolean}
+   * @memberOf af.mvc
+   */
   $.mvc.modelDb.prototype.isNew = function() {
     return this.id === 0;
   }

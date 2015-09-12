@@ -5,6 +5,7 @@
  * Copyright 2012 11com7, Bornheim, Germany
  * @author Dominik Pesch <d.pesch@11com7.de>
  * @since 2012-11-01
+ * @namespace {object} af
  */
 (/**
  * @param {af} $
@@ -19,11 +20,21 @@ function($, window, undefined)
    * $.SqlClause - wraps sql clause strings with parameter values in an object and could be passed to $.DbQuery().
    * @param {String} sqlClause
    * @param {Array} [sqlValues] sql values for '?' parameter in the sqlClause
-   * @constructor
+   * @class SqlClause
+   * @memberOf af
    */
   $.SqlClause = function(sqlClause, sqlValues)
   {
+    /**
+     * @type {string}
+     * @private
+     */
     this._sqlClause = "";
+
+    /**
+     * @type {Array}
+     * @private
+     */
     this._sqlValues = [];
 
     this.set(sqlClause || "");
@@ -31,12 +42,18 @@ function($, window, undefined)
   };
 
   $.SqlClause.prototype =
+  /** @lends af.SqlClause */
   {
+    /**
+     * @memberOf! af.SqlClause#
+     * @lends af.SqlClause#
+     */
     constructor : $.SqlClause,
 
     /**
      * Returns the sql clause as string.
      * @return {String} sql clause
+     * @memberOf! af.SqlClause#
      */
     toString : function()
     {
@@ -46,6 +63,8 @@ function($, window, undefined)
     /**
      * Sets the sql claus string.
      * @param {String} sqlClause
+     * @memberOf! af.SqlClause#
+     * @name af.SqlClause#set
      */
     set : function(sqlClause)
     {
@@ -56,6 +75,7 @@ function($, window, undefined)
 
     /**
      * @inheritDoc
+     * @memberOf! af.SqlClause#
      */
     get : function()
     {
@@ -64,6 +84,7 @@ function($, window, undefined)
 
     /**
      * @return {Boolean} TRUE if this SqlClause object has one or more sql values.
+     * @memberOf! af.SqlClause#
      */
     hasValues : function()
     {
@@ -74,6 +95,8 @@ function($, window, undefined)
      * accessor for internal values: no parameter = get values; with array as parameter = set values.
      * @param {Array} [newValues] set values if parameter is an array
      * @return {Array}
+     * @memberOf! af.SqlClause#
+     * @name af.SqlClause#values
      */
     values : function(newValues)
     {
@@ -126,28 +149,30 @@ function($, window, undefined)
    *
    * @param {String} tableName
    * @param {Object} [options]
-   * @constructor
+   * @class DbQuery
+   * @memberOf af
+   * @this af.DbQuery
    */
   $.DbQuery = function(tableName, options)
   {
     /**
      * @type {String}
-     * @private
+     * @memberOf af.DbQuery
      */
     this._table = '';
     this.setTableName(tableName);
 
     /**
      * sqlite library object.
-     * @type {$.db}
-     * @private
+     * @type {af.db}
+     * @memberOf af.DbQuery
      */
     this._db = (options && options.db) ? options.db : $.db;
 
     /**
      * JavaScript database object for W3C web sql database interface.
      * @type {Database}
-     * @private
+     * @memberOf af.DbQuery
      */
     this._database = this._db.getDatabase();
 
@@ -155,21 +180,21 @@ function($, window, undefined)
      * callback function which will be called for every search filter element.
      * It has to return the complete filter entry[x].
      * @type {function|undefined}
-     * @private
+     * @memberOf af.DbQuery
      */
     this._callbackFilterElement = undefined;
 
     /**
      * the last sql query, will be created by _buildSqlFromFilterArray().
      * @type {String}
-     * @private
+     * @memberOf af.DbQuery
      */
     this._sql = '';
 
     /**
      * Array with a value for every ? which will be set in the sql query.
      * @type {Array}
-     * @private
+     * @memberOf af.DbQuery
      */
     this._sqlValues = [];
   };
@@ -177,10 +202,14 @@ function($, window, undefined)
 
   //noinspection FunctionWithInconsistentReturnsJS,JSUnusedGlobalSymbols
   /**
-   * @this $.DbQuery
+   * @this af.DbQuery
    */
   $.DbQuery.prototype =
+  /** @lends af.DbQuery */
   {
+    /**
+     * @name af.DbQuery.constructor
+     */
     constructor : $.DbQuery,
 
     SQL_OPERATORS : flipToObject(['<', '>', '=', '>=', '<=', '<>', '!=',
@@ -670,7 +699,8 @@ function($, window, undefined)
 
     /**
      * (internal) Returns a sql string with a valid limit clause or an empty string.
-     * @param {String|Array|null} limit
+     * @param {String|Number|Array|null} limit (String|Number) limit (e.g '10', 0, -1, ...);
+     *                                         (array) [limit, offset] (e.g. [0, 10])
      * @return {String}
      * @private
      */
@@ -1006,6 +1036,7 @@ function($, window, undefined)
    * @see http://stackoverflow.com/a/1830844
    * @param {*} test
    * @return {Boolean}
+   * @function
    */
   function isNumeric(test)
   {
@@ -1017,6 +1048,7 @@ function($, window, undefined)
    * Returns TRUE if test is a string.
    * @param {*} test
    * @return {Boolean}
+   * @function
    */
   function isString(test)
   {
@@ -1028,6 +1060,7 @@ function($, window, undefined)
    * @example ['a', 'b', 'c'] => {a:0, b:1, c:2}
    * @param {Array} array
    * @return {Object}
+   * @function
    */
   function flipToObject(array)
   {
