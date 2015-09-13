@@ -11,6 +11,7 @@
  * @param {af} $
  * @param {window} window
  * @param {undefined=} undefined
+ * @export {af.mvc.model}
  */
 function($, window, undefined)
 {
@@ -18,28 +19,67 @@ function($, window, undefined)
 
   /**
    * Internal extended model base class.
+   *
+   * IMPORTANT
+   * ---------
+   * + the model name `name` has to be unique (biunique!)
+   * + if two models share the same table, the table has to be set in `opts.tableName`
+   * 
    * @class
-   * @property {Number} id for object in the database (0 = new element)
-   * @property {String|undefined} tableName can be set, to use an alternative table name instead of modelName
-   * @property {function|undefined} __wakeup (optional) can be set, as "magic" callback used by StorageAdapter#get(), StorageAdapter.getAll() to manipulate data after loading
-   * @property {function|undefined} __sleep (optional) can be set, as "magic" callback used by StorageAdapter#save() to manipulate data before saving
-   * @property {function|undefined} __save (optional) can be set, as "magic" callback used by StorageAdapter#save() to use the same transaction as save()
-   * @property {function|undefined} __remove (optional) can be set, as "magic" callback used by StorageAdapter.remove() to manipulate data before saving
-   * @param {String} name of new model
-   * @param {Object} opts default methods/properties
-   * @extends af.mvc.model
-   * @memberOf! af.mvc
+   * @param {String} name of new model (IMPORTANT: has to be unique for every model class!)
+   * @param {af.mvc.modelDb|Object} opts default methods/properties
+   * @extends {af.mvc.model}
+   * @name af.mvc.modelDb
    */
   $.mvc.modelDb = function(name, opts)
   {
+    /**
+     * ID for object in the database (0 = new element)
+     * @type {number}
+     * @memberOf af.mvc.modelDb
+     */
     this.id = 0;
-    this.tableName = undefined;
-    this.__init = undefined;
-    this.__wakeup = undefined;
-    this.__sleep = undefined;
-    this.__save = undefined;
-    this.__remove = undefined;
 
+    /**
+     * sqlite table name (can be set, to use an alternative table name instead of modelName)
+     * @type {undefined}
+     * @memberOf af.mvc.modelDb
+     */
+    this.tableName = undefined;
+
+    /**
+     * @type {function()|undefined}
+     * @memberOf af.mvc.modelDb
+     */
+    this.__init = undefined;
+
+    /**
+     * "magic" callback used by `StorageAdapter#get()`, `StorageAdapter#getAll()` to manipulate data after loading.
+     * @type {function()|undefined}
+     * @memberOf af.mvc.modelDb
+     */
+    this.__wakeup = undefined;
+
+    /**
+     * "magic" callback used by `StorageAdapter#save()` to manipulate (eg serialize) data BEFORE saving.
+     * @type {function()|undefined}
+     * @memberOf af.mvc.modelDb
+     */
+    this.__sleep = undefined;
+
+    /**
+     * "magic" callback used by {@link SqliteStorageAdapter.save()} to use the same transaction `tx`.
+     * @type {function(SQLTransaction)|undefined}
+     * @memberOf af.mvc.modelDb
+     */
+    this.__save = undefined;
+
+    /**
+     * "magic" callback used by {@link SqliteStorageAdapter.remove()} to use the same transaction `tx`.
+     * @type {function(SQLTransaction, SQLResultSet)|undefined}
+     * @memberOf af.mvc.modelDb
+     */
+    this.__remove = undefined;
 
     //noinspection JSUnresolvedVariable
     $.mvc.model.apply(this, arguments);
@@ -52,17 +92,20 @@ function($, window, undefined)
   };
 
   /**
-   * @memberOf! af.mvc.modelDb
+   * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.prototype = new $.mvc.model();
 
   /**
-   * @memberOf! af.mvc.modelDb
+   * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.prototype.constructor = $.mvc.modelDb;
 
   /**
-   * @memberOf! af.mvc.modelDb
+   * "magic" Reference to parent class.
+   * USE: <code>this.SUPER.func.call(this, args);</code>
+   *
+   * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.prototype.SUPER = $.mvc.modelDb.prototype;
 
@@ -71,7 +114,7 @@ function($, window, undefined)
    * @param {Number} id
    * @param {function} [callback]
    * @return {Object} loaded object
-   * @memberOf! af.mvc.modelDb
+   * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.prototype.get = function(id, callback)
   {
@@ -104,7 +147,7 @@ function($, window, undefined)
    *
    * @param {function} [callback]
    * @return {Array}
-   * @memberOf af.mvc
+   * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.prototype.getAll = function(callback){
     var storageAdapter = this.getStorageAdapter();
@@ -116,7 +159,7 @@ function($, window, undefined)
    * Set properties on the model. You can pass in a key/value or an object of properties.
    * @param {Object|String} obj
    * @param {*} [value] only used if obj ist key string
-   * @memberOf af.mvc
+   * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.prototype.set = function(obj, value){
     var readOnlyVars = ["id", "modelName", "tableName", "SUPER", "prototype"];
@@ -143,14 +186,15 @@ function($, window, undefined)
 
 
   /**
-   * Returns data keynames = all public attributes, which doesn't start with underscore(s).
+   * Returns data keynames = all public attributes, which doesn't start with underscore(s) or a capital letter.
    * This function relies on correct attribute names!
    * @returns {Array}
-   * @memberOf af.mvc
+   * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.prototype.getDataKeys = function() {
     return Object.keys(this).filter(function(key) {
-      return this.hasOwnProperty(key) && key.substr(0,1) !== '_'
+      return this.hasOwnProperty(key) && key.charAt(0) !== '_'
+        && key.charAt(0) !== key.charAt(0).toUpperCase()
         && key !== 'modelName' && key !== 'tableName'&& key !== 'SUPER'
         && !$.isFunction(this[key]);
     }, this);
@@ -160,7 +204,7 @@ function($, window, undefined)
   /**
    * Returns a clone of the model data (only a light clone!)
    * @return {Object} data object with cloned attributes
-   * @memberOf af.mvc
+   * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.prototype.getData = function() {
     var back = {}, self=this;
@@ -207,7 +251,7 @@ function($, window, undefined)
    * @param {Object} search
    * @param {function(Array.<Object|$.mvc.modelDb>)} callback Array with model objects
    * @param {function(SQLTransaction, SQLError)} errorCallback
-   * @memberOf af.mvc
+   * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.prototype.search = function(search, callback, errorCallback)
   {
@@ -221,7 +265,7 @@ function($, window, undefined)
   /**
    * Returns a new - empty - object of the actual model
    * @return {$.mvc.modelDb}
-   * @memberOf af.mvc
+   * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.prototype.createNew = function() {
     return new $.mvc.modelDb(this.modelName, this.getBaseOptions());
@@ -231,7 +275,7 @@ function($, window, undefined)
   /**
    * Returns a clone of the actual model
    * @return {$.mvc.modelDb}
-   * @memberOf af.mvc
+   * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.prototype.clone = function() {
     var clone = this.createNew();
@@ -250,7 +294,7 @@ function($, window, undefined)
    * @param {String} name
    * @param {Object} obj default methods/properties
    * @param {Object} [storageAdapter] - object implementing storageAdapter interface (look below for the default)
-   * @memberOf af.mvc
+   * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.extend = function(name, obj, storageAdapter) {
     // creates
@@ -272,7 +316,7 @@ function($, window, undefined)
 
   /**
    * @return {String} table name from tableName (or modelName).
-   * @memberOf af.mvc
+   * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.prototype.getTableName = function() {
     return (this.tableName) ? this.tableName : this.modelName;
@@ -280,7 +324,7 @@ function($, window, undefined)
 
   /**
    * @returns {boolean}
-   * @memberOf af.mvc
+   * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.prototype.isNew = function() {
     return this.id === 0;
