@@ -1322,7 +1322,7 @@
     }
 
     successCallback = $.isFunction(successCallback) ? successCallback : undefined;
-    errorCallback = $.isFunction(errorCallback) ? errorCallback : undefined;
+    errorCallback = $.isFunction(errorCallback) ? errorCallback : db._defaultQueryErrorCallback(sql);
 
     /** @type {SQLTransaction} tx */
     sqlLast = sql;
@@ -1331,6 +1331,22 @@
     //noinspection JSValidateTypes
     tx.executeSql(sql, data, successCallback, errorCallback);
   };
+
+
+  /**
+   * Generates a sql query error callback function which could show the sql error with its REAL query string.
+   * This method will be used as default error callback function for {@link db.executeSql()}.
+   *
+   * @param {string} sql sql string
+   * @returns {function(SQLTransaction, SQLError)} error callback
+   */
+  db._defaultQueryErrorCallback = function(sql)
+  {
+    return function(tx, sqlError)
+    {
+      throw new Error(db.SqlError(sqlError, sql, '[$.db.defaultQueryErrorCallback()]'));
+    }
+  }
 
 
   // ===================================================================================================================
