@@ -250,7 +250,7 @@ function($, window, undefined)
    *
    * @param {Object} search
    * @param {function(Array.<Object|$.mvc.modelDb>)} callback Array with model objects
-   * @param {function(SQLTransaction, SQLError)} errorCallback
+   * @param {function(SQLTransaction, SQLError)} [errorCallback]
    * @memberOf af.mvc.modelDb
    */
   $.mvc.modelDb.prototype.search = function(search, callback, errorCallback)
