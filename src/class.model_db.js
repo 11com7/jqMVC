@@ -111,6 +111,27 @@ function($, window, undefined)
 
   /**
    * Loads entry with id and returns model object OR null (= not found!).
+   *
+   * <p><b>__wakeup() method</b>
+   * get() supports a magic __wakeup() method in model. If this function could be found, it will called before passing the object to the callback function.
+   * <code>this</code> refers to the loaded object!
+   * <pre><code>
+   *  var Model = new $.mvc.model.extend("model",
+   *  {
+   *    // ...
+   *
+   *    // this method will be called before the loaded object will be passed to callback()
+   *    __wakeup : function()
+   *    {
+   *      // do something with "this"
+   *
+   *      return this;
+   *    }
+   *
+   *    // ...
+   *  }</code></pre>
+   * </p>
+   *
    * @param {Number} id
    * @param {function} [callback]
    * @return {Object} loaded object
@@ -127,10 +148,16 @@ function($, window, undefined)
 
       if (obj)
       {
+        /** @type {af.mvc.modelDb} el */
         el = self.createNew();
         $.extend(el, obj);
         el.modelName = self.modelName;
         el.id = id;
+
+        if (!!el.__wakeup && $.isFunction(el.__wakeup))
+        {
+          el = el.__wakeup.call(el);
+        }
       }
       else
       {
