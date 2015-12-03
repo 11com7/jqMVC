@@ -485,7 +485,7 @@ af.DbUpdater = (function(/** af */ $)
         this._database.transaction(
           function(tx)
           {
-            if (!this._alreadyExecuted || this._options.triggerEventsOnReExecute)
+            if (!self._alreadyExecuted || self._options.triggerEventsOnReExecute)
             {
               $.trigger(self, EVENT_PROGRESS, [{ "value" : ++self._runTick,  "max" : self._runFuncsMax }]);
             }
