@@ -42,7 +42,7 @@
       timestamp_create : 'dt_create',
       timestamp_change : 'dt_change',
       timestamp_type : 'INTEGER',
-      debug : true
+      debug : false
     },
 
     sqlLast = '',
