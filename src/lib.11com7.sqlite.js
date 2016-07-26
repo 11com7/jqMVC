@@ -42,7 +42,7 @@
       timestamp_create : 'dt_create',
       timestamp_change : 'dt_change',
       timestamp_type : 'INTEGER',
-      debug : false
+      debug : true
     },
 
     sqlLast = '',
@@ -676,7 +676,10 @@
     tmp = view.select.getString("from");
     for (var alias in view.tables)
     {
-      tmp = tmp.replace("["+alias+"]", view.tables[alias] + " as " + alias);
+      if (view.tables.hasOwnProperty(alias))
+      {
+        tmp = tmp.replace("["+alias+"]", view.tables[alias] + " as " + alias);
+      }
     }
     sql += "FROM " + tmp + " ";
 

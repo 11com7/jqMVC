@@ -239,6 +239,8 @@
             viewsTotal[name]=obj.views.length||Object.keys(obj.views).length;
             for (var i in obj.views)
             {
+                if (!obj.views.hasOwnProperty(i)) { continue; }
+
                 var shortName=$.isArray(obj.views)?obj.views[i]:i;
                 if (!viewsCache[shortName] && jq("#" + shortName).length == 0) {
                     $.mvc.controller.addView(obj.views[i],name,shortName);

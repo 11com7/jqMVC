@@ -944,8 +944,11 @@ function($, window, undefined)
           var tmp = "(";
           for (var tt in value)
           {
-            tmp+=(tt != 0 ? ", " : "") + placeholder;
-            this._pushValue(value[tt]);
+            if (value.hasOwnProperty(tt))
+            {
+              tmp+=(tt != 0 ? ", " : "") + placeholder;
+              this._pushValue(value[tt]);
+            }
           }
           value = tmp + ")";
         }        
