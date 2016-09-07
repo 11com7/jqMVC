@@ -208,7 +208,6 @@
       {
         database = window.openDatabase(options.name, options.version, options.displayName, options.databaseSize);
         _trigger('SQL:open', database);
-        if (!!options.autoInit) { _initDb(); }
       }
       catch (e)
       {
@@ -991,9 +990,9 @@
 
     if (!db.isOpen())
     {
-      if (!options.autoInit)
+      if (!!options.autoInit)
       { //noinspection JSCheckFunctionSignatures,JSValidateTypes
-        $(document).on("SQL:open", _initDb)
+        $(document).on("SQL:open", function() { _initDb(null, readyCallback) });
       }
 
       db.open();
@@ -1053,8 +1052,14 @@
       }
     }
 
+    if (options.debug) { db.dbg("initDb(...) --> READY!"); }
+
     initialized = true;
-    if ($.isFunction(readyCallback)) { readyCallback(tx); }
+    if ($.isFunction(readyCallback))
+    {
+      if (options.debug) { db.dbg("initDb(...) --> CALL READY CALLBACK!"); }
+      readyCallback(tx);
+    }
   }
 
 
