@@ -984,27 +984,45 @@
    */
   db.initDb = function(tx, forceReInit, readyCallback)
   {
-    if (forceReInit === true)  { initialized = false };
+    if (forceReInit === true)
+    {
+      if (options.debug) { db.dbg("initDb(...) --> force init"); }
+      initialized = false
+    };
 
-    if (initialized)  { return; }
+    if (initialized)
+    {
+      if (options.debug) { db.dbg("initDb(...) --> already initialized"); }
+      _initReady(tx, readyCallback);
+      return;
+    }
+
+    if (options.debug) { db.dbg("initDb(...) --> start init"); }
 
     if (!db.isOpen())
     {
       if (!!options.autoInit)
-      { //noinspection JSCheckFunctionSignatures,JSValidateTypes
+      {
+        if (options.debug) { db.dbg("initDb(...) --> autoInit active -> register _initDb() callback"); }
+
+        //noinspection JSCheckFunctionSignatures,JSValidateTypes
         $(document).on("SQL:open", function() { _initDb(null, readyCallback) });
       }
 
+      if (options.debug) { db.dbg("initDb(...) --> open db"); }
       db.open();
     }
     else
     {
+      if (options.debug) { db.dbg("initDb(...) --> call _initDb()"); }
       _initDb(tx, readyCallback);
     }
   };
 
   function _initDb(tx, readyCallback)
   {
+    if (options.debug) { db.dbg("_initDb(...)"); }
+
     if (!db.isOpen()) { throw new Error("database not opened"); }
 
     var sql = "",
@@ -1055,10 +1073,15 @@
     if (options.debug) { db.dbg("initDb(...) --> READY!"); }
 
     initialized = true;
-    if ($.isFunction(readyCallback))
+    _initReady(tx, readyCallback);
+  }
+
+  function _initReady(tx, callback)
+  {
+    if ($.isFunction(callback))
     {
       if (options.debug) { db.dbg("initDb(...) --> CALL READY CALLBACK!"); }
-      readyCallback(tx);
+      callback(tx);
     }
   }
 
