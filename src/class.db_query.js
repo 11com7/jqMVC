@@ -831,7 +831,7 @@ function($, window, undefined)
               throw new Error("unknown column in columns[" + t + "]: '" + columnList[t] + "'" );
             }
 
-            returnColumns.push(columns[t]);
+            returnColumns.push(columnList[t]);
           }
           else if ($.isObject(columnList[t]))
           {
