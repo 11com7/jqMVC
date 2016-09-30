@@ -1006,7 +1006,7 @@
         if (options.debug) { db.dbg("initDb(...) --> autoInit active -> register _initDb() callback"); }
 
         //noinspection JSCheckFunctionSignatures,JSValidateTypes
-        $(document).on("SQL:open", function() { _initDb(null, readyCallback) });
+        $(document).on("SQL:open", _openCallback);
       }
 
       if (options.debug) { db.dbg("initDb(...) --> open db"); }
@@ -1016,6 +1016,14 @@
     {
       if (options.debug) { db.dbg("initDb(...) --> call _initDb()"); }
       _initDb(tx, readyCallback);
+    }
+
+    function _openCallback()
+    {
+      if (options.debug) { db.dbg("initDb(...) --> SQL:open -> unregister callback and call _initDb()"); }
+
+      $(document).off("SQL:open", _openCallback);
+      _initDb(null, readyCallback);
     }
   };
 
