@@ -1704,7 +1704,7 @@
   db.insertMultiRows = function(tableName, columns, rows, tx, readyCallback, errorCallback, options)
   {
     // start transaction if necessary
-    if (typeof tx !== "object")
+    if (!tx || typeof tx !== "object" || !tx.executeSql)
     {
       db.getDatabase().transaction(function(tx)
       {
@@ -1744,8 +1744,8 @@
         }
       }
 
-      //noinspection JSValidateTypes
-      db.executeSql(tx, sql, sqlValues, (end > rows.length) ? readyCallback : _insertRowChunks, errorCallback);
+      // dom, 2016-10-16, Bugfix: hier kam es zu einem 0-Insert-Bug, falls end exakt gleich der Gesamtanzahl war
+      db.executeSql(tx, sql, sqlValues, (end >= rows.length) ? readyCallback : _insertRowChunks, errorCallback);
     }
   };
 
