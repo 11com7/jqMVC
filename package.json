@@ -1,0 +1,24 @@
+{
+  "name": "jqmvc-11com7-fork",
+  "version": "1.0.0",
+  "description": "This is a fork which extends the model for SQLite database support using the (stopped) [W3C Web SQL Database interface] (http://www.w3.org/TR/webdatabase/)",
+  "main": "jq.mvc.js",
+  "directories": {
+    "example": "example",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/11com7/jqMVC.git"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "private": true,
+  "bugs": {
+    "url": "https://github.com/11com7/jqMVC/issues"
+  },
+  "homepage": "https://github.com/11com7/jqMVC#readme"
+}
