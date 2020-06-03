@@ -3,12 +3,12 @@ jqMVC
 
 lightweight MVC framework built on top of jqMobi
 
-Please see  http://www.jqmobi.com/docmvc.php for documentation
+**DEPRECATED – not activiley maintained – use only for legacy compatibility!**
 
 
 SQLite fork
 -----------
-This is a fork which extends the model for SQLite database support using the (stopped) [W3C Web SQL Database interface]
+This is a fork which extends the model for SQLite database support using the (deprecated) [W3C Web SQL Database interface]
 (http://www.w3.org/TR/webdatabase/):
 * extends jq.mvc.model
 * get(), getAll(), remove(), set()
