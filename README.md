@@ -3,7 +3,7 @@ jqMVC
 
 lightweight MVC framework built on top of jqMobi
 
-**DEPRECATED – not activiley maintained – use only for legacy compatibility!**
+**DEPRECATED – not activiley maintained – used only for legacy compatibility!**
 
 
 SQLite fork
