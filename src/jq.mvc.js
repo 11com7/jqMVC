@@ -3,20 +3,20 @@
     /**
      * This is the main app class that gets created.  It will include files and offer a "load" when they are all ready
      */
-    $.mvc={};
+    $.mvc = {};
 
 
-    $.mvc.app=function(){
-        var app= {
-            _loadTimer:null,
-            _modelsReady:false,
-            _controllersReady:false,
-            _loadedListeners:[],
-            _modelsLoaded:0,
-            _totalModels:0,
-            _controllersDir:"controllers/",
-            _modelsDir:"models/",
-            _baseDir:"",
+    $.mvc.app = function() {
+        var app = {
+            _loadTimer: null,
+            _modelsReady: false,
+            _controllersReady: false,
+            _loadedListeners: [],
+            _modelsLoaded: 0,
+            _totalModels: 0,
+            _controllersDir: "controllers/",
+            _modelsDir: "models/",
+            _baseDir: "",
             /**
              * Set the base directory for urls
              ```
@@ -25,12 +25,14 @@
              *@param (String) base directory
              *@title app.setBaseDir(dir)
              */
-            setBaseDir:function(str){
-                if(str[0]=="/")
+            setBaseDir: function(str) {
+                if (str[0] == "/") {
                     str = str.substr(1);
-                if(str[str.length-1]=="/")
-                    str=str.slice(0,-1);
-                baseUrl+="/"+str;
+                }
+                if (str[str.length - 1] == "/") {
+                    str = str.slice(0, -1);
+                }
+                baseUrl += "/" + str;
             },
 
             /**
@@ -40,10 +42,10 @@
              ```
              *@title app.listenHashChange()
              */
-            listenHashChange:function(listen){
-                window.addEventListener("hashchange",function(e){
-                    var url=document.location.hash.replace("#","/");
-                    $.mvc.route(url,e);
+            listenHashChange: function(listen) {
+                window.addEventListener("hashchange", function(e) {
+                    var url = document.location.hash.replace("#", "/");
+                    $.mvc.route(url, e);
                 });
             },
             /**
@@ -54,8 +56,8 @@
              *@param {String} path
              *@title app.controllersDir(path);
              */
-            controllersDir:function(path){
-               this._controllersDir=path;
+            controllersDir: function(path) {
+                this._controllersDir = path;
             },
             /**
              * Set the path for where models will be loaded from
@@ -65,8 +67,8 @@
              *@param {String} path
              *@title app.modelsDir(path);
              */
-            modelsDir:function(path){
-                this._modelsDir=path;
+            modelsDir: function(path) {
+                this._modelsDir = path;
             },
             /**
              * Set the type attribute for templates. This is useful if you are using another templating system
@@ -77,9 +79,9 @@
              *@title app.setViewType(type)
              */
 
-            setViewType:function(type){
+            setViewType: function(type) {
                 //this._templateType=type;
-                $.mvc._app._templateType=type;
+                $.mvc._app._templateType = type;
             },
             /**
              * Function to execute when $.mvc.app is ready (controllers and models are loaded async)
@@ -91,11 +93,12 @@
              *@param {Function} fnc
              *@title app.ready(func);
              */
-            ready:function(fnc){
-                if(!this.loaded)
-                    $(document).one("jqmvc:loaded",fnc);
-                else
+            ready: function(fnc) {
+                if (!this.loaded) {
+                    $(document).one("jqmvc:loaded", fnc);
+                } else {
                     fnc();
+                }
             },
             /**
              * Load controllers for the app asynchronously.  Do not put the ".js" suffix on the controller names.
@@ -111,26 +114,29 @@
                 var that = this;
                 $(document).ready(function() {
                     that._loadTimer = setTimeout(function() {
-                        that._modelsReady=true;
-                        if(that._controllersReady)
+                        that._modelsReady = true;
+                        if (that._controllersReady) {
                             $(document).trigger("jqmvc:loaded");
+                        }
                     }, 1500); //Used if no models are loaded
-                    if(typeof (urls) === "string") {
+                    if (typeof (urls) === "string") {
                         urls = [urls];
                     }
-                    for(var i = 0; i < urls.length; i++) {
+                    for (var i = 0; i < urls.length; i++) {
                         var file = document.createElement("script");
                         file.src = that._controllersDir + urls[i] + ".js";
-                        file.onerror = function(e) { console.log("error ", e); };
+                        file.onerror = function(e) {
+                            console.log("error ", e);
+                        };
                         $("head").append(file);
                         that._loadedListeners[urls[i]] = 1;
                         that._loadedListeners.length++;
                         $(document).one(urls[i] + ":ready", function(e) {
                             delete that._loadedListeners[e.data.name];
                             that._loadedListeners.length--;
-                            if(that._loadedListeners.length == 0) {
+                            if (that._loadedListeners.length == 0) {
                                 that._controllersReady = true;
-                                if(that._modelsReady) {
+                                if (that._modelsReady) {
                                     $(document).trigger("jqmvc:loaded");
                                 }
                             }
@@ -151,30 +157,31 @@
              *@param {String|Array} urls
              *@title app.loadModels(urls);
              */
-            loadModels:function(urls){
-                var that=this;
+            loadModels: function(urls) {
+                var that = this;
 
                 clearTimeout(this._loadTimer);
-                $(document).ready(function(){
-                    if(typeof(urls)==="string"){
-                        urls=[urls];
+                $(document).ready(function() {
+                    if (typeof (urls) === "string") {
+                        urls = [urls];
                     }
-                    that._totalModels=urls.length;
+                    that._totalModels = urls.length;
 
-                    for(var i=0;i<urls.length;i++)
-                    {
-                        var file=document.createElement("script");
-                        file.src=that._modelsDir+urls[i]+".js";
-                        file.onload=function(){
+                    for (var i = 0; i < urls.length; i++) {
+                        var file = document.createElement("script");
+                        file.src = that._modelsDir + urls[i] + ".js";
+                        file.onload = function() {
                             that._modelsLoaded++;
-                            if(that._modelsLoaded>=that._totalModels)
-                            {
-                                that._modelsReady=true;
-                                if(that._controllersReady)
+                            if (that._modelsLoaded >= that._totalModels) {
+                                that._modelsReady = true;
+                                if (that._controllersReady) {
                                     $(document).trigger("jqmvc:loaded");
+                                }
                             }
                         };
-                        file.onerror=function(e){console.log("error ",e);};
+                        file.onerror = function(e) {
+                            console.log("error ", e);
+                        };
                         $("head").append(file);
                         delete file;
                     }
@@ -189,23 +196,23 @@
     /**
      * Internal object for global app settings
      */
-    $.mvc._app={
-        _templateType:"text/html"
+    $.mvc._app = {
+        _templateType: "text/html"
     }
-    
+
     /**
      * private properties for controllers
      * @api private
      */
-    var baseUrl=document.location.protocol+"//"+document.location.host;
+    var baseUrl = document.location.protocol + "//" + document.location.host;
     var viewsCache = [];
-    var modelsCache=[];
-    var readyFuncs={};
-    var viewsTotal={};
-    var modelsTotal={};
-    var viewsLoaded={};
-    var modelsLoaded={};
-    var controllerReady={};
+    var modelsCache = [];
+    var readyFuncs = {};
+    var viewsTotal = {};
+    var modelsTotal = {};
+    var viewsLoaded = {};
+    var modelsLoaded = {};
+    var controllerReady = {};
 
 
     $.mvc.controller = {};
@@ -225,34 +232,35 @@
      */
     $.mvc.controller.create = function(name, obj) {
 
-        var loaded=true;
+        var loaded = true;
         $.mvc.controller[name] = obj;
-        viewsTotal[name]=0;
-        viewsLoaded[name]=0;
-        modelsLoaded[name]=0;
-        modelsTotal[name]=0;
-        if(obj.hasOwnProperty("init"))
-            controllerReady[name]=obj;
-        if (obj.hasOwnProperty("views") && (obj.views.length > 0||Object.keys(obj.views).length)>0)
-        {
-            loaded=false;
-            viewsTotal[name]=obj.views.length||Object.keys(obj.views).length;
-            for (var i in obj.views)
-            {
-                if (!obj.views.hasOwnProperty(i)) { continue; }
+        viewsTotal[name] = 0;
+        viewsLoaded[name] = 0;
+        modelsLoaded[name] = 0;
+        modelsTotal[name] = 0;
+        if (obj.hasOwnProperty("init")) {
+            controllerReady[name] = obj;
+        }
+        if (obj.hasOwnProperty("views") && (obj.views.length > 0 || Object.keys(obj.views).length) > 0) {
+            loaded = false;
+            viewsTotal[name] = obj.views.length || Object.keys(obj.views).length;
+            for (var i in obj.views) {
+                if (!obj.views.hasOwnProperty(i)) {
+                    continue;
+                }
 
-                var shortName=$.isArray(obj.views)?obj.views[i]:i;
+                var shortName = $.isArray(obj.views) ? obj.views[i] : i;
                 if (!viewsCache[shortName] && jq("#" + shortName).length == 0) {
-                    $.mvc.controller.addView(obj.views[i],name,shortName);
+                    $.mvc.controller.addView(obj.views[i], name, shortName);
                     viewsCache[shortName] = 1;
                 }
             }
 
         }
 
-        if(loaded){
-            $(document).trigger(name+":ready",{'name':name});
-            controllerReady[name]&&controllerReady[name].init.apply(controllerReady[name]);
+        if (loaded) {
+            $(document).trigger(name + ":ready", {'name': name});
+            controllerReady[name] && controllerReady[name].init.apply(controllerReady[name]);
         }
         return $.mvc.controller[name];
 
@@ -269,54 +277,58 @@
      * @title $.mvc.controller.route
      */
     $.mvc.route = function(url, evt) {
-         if(typeof(url)!=="string"&&url.nodeName&&url.nodeName.toLowerCase()=="a") 
-            url=url.href;
+        if (typeof (url) !== "string" && url.nodeName && url.nodeName.toLowerCase() == "a") {
+            url = url.href;
+        }
         var route, axt;
 
-        url=String(url);
-        if (url.indexOf(baseUrl) === 0)
+        url = String(url);
+        if (url.indexOf(baseUrl) === 0) {
             url = url.substring(baseUrl.length, url.length);
-        if (url[0] == "/")
+        }
+        if (url[0] == "/") {
             url = url.substr(1);
-        if(url[url.length-1]=="/")
-            url=url.slice(0,-1);
+        }
+        if (url[url.length - 1] == "/") {
+            url = url.slice(0, -1);
+        }
         url = url.split("/");
 
-        if(url.length>1){
+        if (url.length > 1) {
             route = url.splice(0, 1);
             axt = url.splice(0, 1);
+        } else {
+            route = url[0];
+            axt = "default";
         }
-        else {
-            route=url[0];
-            axt="default";
-        }
-        if($.mvc.controller[route] && $.mvc.controller[route].hasOwnProperty(axt)) {
-            evt&&evt.preventDefault();
+        if ($.mvc.controller[route] && $.mvc.controller[route].hasOwnProperty(axt)) {
+            evt && evt.preventDefault();
             $.mvc.controller[route][axt].apply($.mvc.controller[route], url);
             return true;
         }
         return false;
     };
 
-    $.mvc.addRoute=function(url,fnc){
-        if (url.indexOf(baseUrl) === 0)
+    $.mvc.addRoute = function(url, fnc) {
+        if (url.indexOf(baseUrl) === 0) {
             url = url.substring(baseUrl.length, url.length);
-        if (url[0] == "/")
+        }
+        if (url[0] == "/") {
             url = url.substr(1);
+        }
         url = url.split("/");
 
-        if(url.length>1){
+        if (url.length > 1) {
             var route = url.splice(0, 1);
             var axt = url.splice(0, 1);
+        } else {
+            route = url[0];
+            axt = "default";
         }
-        else {
-            route=url[0];
-            axt="default";
+        if (!$.mvc.controller[route]) {
+            $.mvc.controller[route] = {};
         }
-        if(!$.mvc.controller[route]){
-            $.mvc.controller[route]={};
-        }
-        $.mvc.controller[route][axt]=fnc;
+        $.mvc.controller[route][axt] = fnc;
 
     };
 
@@ -328,16 +340,15 @@
      * @api private
      * @title $.mvc.controller.addView
      */
-    $.mvc.controller.addView = function(path,controller,name) {
+    $.mvc.controller.addView = function(path, controller, name) {
         $.get(path, function(data) {
-            var id=name;
-            $(document.body).append($("<script type='"+$.mvc._app._templateType+"' id='" + id+ "'>" + data + "</script>"));
+            var id = name;
+            $(document.body).append($("<script type='" + $.mvc._app._templateType + "' id='" + id + "'>" + data + "</script>"));
             viewsLoaded[controller]++;
-            if((viewsLoaded[controller]==viewsTotal[controller]))
-            {
-                $(document).trigger(controller+":ready",{name:controller});
+            if ((viewsLoaded[controller] == viewsTotal[controller])) {
+                $(document).trigger(controller + ":ready", {name: controller});
 
-                controllerReady[controller]&&controllerReady[controller].init.apply(controllerReady[controller]);
+                controllerReady[controller] && controllerReady[controller].init.apply(controllerReady[controller]);
             }
         });
     };
@@ -346,11 +357,11 @@
     /**
      * Here we override the custom click handler for jqUi so we can capture anchor events as needed
      */
-    if($.ui)
+    if ($.ui) {
         $.ui.customClickHandler = $.mvc.route;
-    else{
-        $(document).on("click","a",function(evt){
-            $.mvc.route(evt.target.href,evt)
+    } else {
+        $(document).on("click", "a", function(evt) {
+            $.mvc.route(evt.target.href, evt)
         });
     }
 })(jq);
@@ -359,7 +370,7 @@
 (function($) {
 
     var storageAdapters = {}; //Each model can have it's own connector
-    var baseOpts={}; //Base options/configs for each model to inherit from
+    var baseOpts = {}; //Base options/configs for each model to inherit from
     /**
      * This is the base model that all models inherit from.  This is used internally by $.mvc.model.extend
 
@@ -369,14 +380,16 @@
      * @title $.mvc.model
      */
 
-    $.mvc.model =function(name,opts) {
+    $.mvc.model = function(name, opts) {
 
         var self = this;
         opts && opts['modelName'] && delete opts['modelName'];
         opts && opts['id'] && delete opts['id'];
-        if(!baseOpts[name]) //First time it's created, we want to store the options
-            baseOpts[name]=opts;
-        $.extend(this,opts);
+        if (!baseOpts[name]) //First time it's created, we want to store the options
+        {
+            baseOpts[name] = opts;
+        }
+        $.extend(this, opts);
 
         this.modelName = name;
         //this.id = $.uuid();
@@ -387,60 +400,63 @@
      * @api private
      */
     $.mvc.model.prototype = {
-            //Load a single object by id
-            get: function(id,callback) {
-                var self=this;
-                var el = new $.mvc.model(this.modelName,baseOpts[this.modelName]);
-                storageAdapters[this.modelName].get(id,
-                    function(theObj){
-                        el=$.extend(el,theObj);
-                        el.modelName=self.modelName;
-                        el.id=id;
-                        if(callback)
-                           return callback(el);
-                        return el;
+        //Load a single object by id
+        get: function(id, callback) {
+            var self = this;
+            var el = new $.mvc.model(this.modelName, baseOpts[this.modelName]);
+            storageAdapters[this.modelName].get(
+                id,
+                function(theObj) {
+                    el = $.extend(el, theObj);
+                    el.modelName = self.modelName;
+                    el.id = id;
+                    if (callback) {
+                        return callback(el);
                     }
-                );
-                
-            },
-            //Get all objects for a given type and executes a callback
-            getAll: function(callback) {
-                return storageAdapters[this.modelName].getAll(this.modelName,callback);
-                
-            },
-            //Save an object and executes a callback
-            save: function(callback) {
-                return storageAdapters[this.modelName].save(this,callback);
-                
-            },
-            //Remove an object and execute a callback
-            remove: function(callback) {
-                return storageAdapters[this.modelName].remove(this,callback);               
-            },
-            //Set properties on the model.  You can pass in a key/value or an object of properties
-            set:function(obj,value){
-               if($.isObject(obj)){
-                    obj && obj['modelName'] && delete obj['modelName'];
-                    obj && obj['id'] && delete obj['id'];
-                    for(var j in obj)
-                    {
-                        if(this.hasOwnProperty(j))
-                           this[j]=obj[j];
+                    return el;
+                }
+            );
+
+        },
+        //Get all objects for a given type and executes a callback
+        getAll: function(callback) {
+            return storageAdapters[this.modelName].getAll(this.modelName, callback);
+
+        },
+        //Save an object and executes a callback
+        save: function(callback) {
+            return storageAdapters[this.modelName].save(this, callback);
+
+        },
+        //Remove an object and execute a callback
+        remove: function(callback) {
+            return storageAdapters[this.modelName].remove(this, callback);
+        },
+        //Set properties on the model.  You can pass in a key/value or an object of properties
+        set: function(obj, value) {
+            if ($.isObject(obj)) {
+                obj && obj['modelName'] && delete obj['modelName'];
+                obj && obj['id'] && delete obj['id'];
+                for (var j in obj) {
+                    if (this.hasOwnProperty(j)) {
+                        this[j] = obj[j];
                     }
-                    return;
-               }
-               if(obj.toLowerCase()!="id"&&obj.toLowerCase()!="modelname")
-                  this[obj]=value;
-            },
-            // Returns the storageAdapter
-            getStorageAdapter:function(){
-              return storageAdapters[this.modelName];
-            },
-            // Returns the base options
-            getBaseOptions:function(){
-              return baseOpts[this.modelName];
+                }
+                return;
             }
-        };
+            if (obj.toLowerCase() != "id" && obj.toLowerCase() != "modelname") {
+                this[obj] = value;
+            }
+        },
+        // Returns the storageAdapter
+        getStorageAdapter: function() {
+            return storageAdapters[this.modelName];
+        },
+        // Returns the base options
+        getBaseOptions: function() {
+            return baseOpts[this.modelName];
+        }
+    };
 
     /**
      * This is called to create a new model type.  You pass in the name, default properties and an optional storage adapter
@@ -453,7 +469,7 @@
      * @param {Object} [storageAdapter] - object implmenting storageAdapter interface (look below for the default)
      */
     $.mvc.model.extend = function(name, obj, storageAdapter) {
-        storageAdapters[name] = storageAdapter ? storageAdapter : (localAdapter.linkerCache[name]={},localAdapter);
+        storageAdapters[name] = storageAdapter ? storageAdapter : (localAdapter.linkerCache[name] = {}, localAdapter);
         return function() {
             return new $.mvc.model(name, obj);
         }
@@ -470,55 +486,56 @@
      * @api private
      */
     var localAdapter = {
-        linkerCache:{}, //We do not store all documents in a single record, we keep a lookup document to link them
+        linkerCache: {}, //We do not store all documents in a single record, we keep a lookup document to link them
 
-        save: function(obj,callback) {
-            if(!obj.id)
-                obj.id=$.uuid();
+        save: function(obj, callback) {
+            if (!obj.id) {
+                obj.id = $.uuid();
+            }
             window.localStorage.setItem(obj.id, JSON.stringify(obj));
-            this.linkerCache[obj.modelName][obj.id]=1;
-            window.localStorage.setItem(obj.modelName+"_linker",JSON.stringify(this.linkerCache[obj.modelName]));
+            this.linkerCache[obj.modelName][obj.id] = 1;
+            window.localStorage.setItem(obj.modelName + "_linker", JSON.stringify(this.linkerCache[obj.modelName]));
             $(document).trigger(obj.modelName + ":save", obj);
-            if(callback)
+            if (callback) {
                 return callback(obj);
+            }
         },
-        get: function(id,callback) {
+        get: function(id, callback) {
             var el = window.localStorage.getItem(id);
             try {
                 el = JSON.parse(el);
-            }
-            catch (e) {
+            } catch (e) {
                 el = {}
             }
             return callback(el);
         },
-        getAll:function(type,callback){
-            var data=JSON.parse(window.localStorage.getItem(type+"_linker"));
-            var res=[];
-            for(var j in data){
-                if(localStorage[j]){
-                    var item=JSON.parse(localStorage[j]);
-                    item.modelName=type;
-                    item.id=j;
+        getAll: function(type, callback) {
+            var data = JSON.parse(window.localStorage.getItem(type + "_linker"));
+            var res = [];
+            for (var j in data) {
+                if (localStorage[j]) {
+                    var item = JSON.parse(localStorage[j]);
+                    item.modelName = type;
+                    item.id = j;
                     res.push(item);
-                }
-                else {
+                } else {
                     delete data[j];
                 }
             }
-            this.linkerCache[type]=data?data:{};
+            this.linkerCache[type] = data ? data : {};
             //Fix dangling references
-            window.localStorage.setItem(type+"_linker",JSON.stringify(this.linkerCache[type]));
+            window.localStorage.setItem(type + "_linker", JSON.stringify(this.linkerCache[type]));
             return callback(res);
 
         },
-        remove: function(obj,callback) {
+        remove: function(obj, callback) {
             window.localStorage.removeItem(obj.id);
             delete this.linkerCache[obj.modelName][obj.id];
-            window.localStorage.setItem(obj.modelName+"_linker",JSON.stringify(this.linkerCache[obj.modelName]));
+            window.localStorage.setItem(obj.modelName + "_linker", JSON.stringify(this.linkerCache[obj.modelName]));
             $(document).trigger(obj.modelName + ":remove", obj.id);
-            if(callback)
+            if (callback) {
                 return callback(obj);
+            }
         }
     };
 
