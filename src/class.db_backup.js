@@ -20,10 +20,10 @@ function($, window, undefined) {
     /**
      * Database-Backup to store and restore SQL databases.
      * @param {Object} [opts]
-     * @param {Object} [opts.$db] accepts a $.db object or use $.db by default
+     * @param {Object} [opts.$db] accepts a $.DatabaseAdapter object or use $.db by default
      * @returns {DbBackup}
      * @constructor
-     * @exports DbBackup as af.DbBackup
+     * @alias af.DbBackup
      */
     var DbBackup = function(opts) {
         if (!(this instanceof DbBackup)) {
@@ -35,7 +35,7 @@ function($, window, undefined) {
          * @type {Object}
          */
         this._options = $.extend({}, DbBackup.defaultOptions, opts);
-        this._$db = this._options['$db'] || $.db;
+        this._$db = this._options['$db'] || $.db || throw new Error('Please set `$db` as option or assure that a DatabaseAdapter instance is exposed as `$.db`');
     };
 
     // --------------------------------------------------------------------------------
@@ -62,6 +62,7 @@ function($, window, undefined) {
              * @param {Object} [opts]
              * @param {String} [opts.formatter='json']  a formatter (from DbBackup.prototype.formatter[])
              * @returns {*|undefined}
+             * @alias af.DbBackup.dump
              */
             dump: function(successCallback, opts) {
                 opts = $.isObject(opts) ? opts : {};
@@ -164,6 +165,7 @@ function($, window, undefined) {
              * @param {function(Number|String, String)} errorCallback
              * @param {Object} [opts]
              * @param {Boolean} [opts.dropDatabase=true]  TRUE: drops the database before restore; FALSE: only restore
+             * @alias af.DbBackup.restore
              */
             restore: function(dump, successCallback, errorCallback, opts) {
                 opts = $.isObject(opts) ? opts : {};
@@ -191,7 +193,7 @@ function($, window, undefined) {
                 // restore data
                 // --------------------------------------------------------------------------------
                 var self = this, db = this._$db;
-                db.getDatabase().transaction(
+                db.getConnection().transaction(
                     function(tx) {
                         // DROP BEFORE RESTORE
                         if (!!opts.dropDatabase) {
@@ -222,27 +224,25 @@ function($, window, undefined) {
                 // --------------------------------------------------------------------------------
                 function _restore(tx)
                 {
-                    var t;
-
                     // create tables
-                    for (t = 0; t < data.sql.tables.length; t++) {
-                        db.executeSql(tx, data.sql.tables[t]);
-                    }
+                    data.sql.tables.forEach(function(table) {
+                        db.executeSql(tx, table);
+                    });
 
                     // create triggers
-                    for (t = 0; t < data.sql.triggers.length; t++) {
-                        db.executeSql(tx, data.sql.triggers[t]);
-                    }
+                    data.sql.triggers.forEach(function(trigger) {
+                        db.executeSql(tx, trigger);
+                    });
 
                     // create indexes
-                    for (t = 0; t < data.sql.indexes.length; t++) {
-                        db.executeSql(tx, data.sql.indexes[t]);
-                    }
+                    data.sql.indexes.forEach(function(index) {
+                        db.executeSql(tx, index);
+                    });
 
                     // create views
-                    for (t = 0; t < data.sql.views.length; t++) {
-                        db.executeSql(tx, data.sql.views[t]);
-                    }
+                    data.sql.views.forEach(function(view) {
+                        db.executeSql(tx, view);
+                    });
 
                     // insert data
                     if ($.isObject(data.data)) {
@@ -382,6 +382,7 @@ function($, window, undefined) {
              *                                (Object) object setter
              * @param {*} [value]
              * @returns {*|undefined} single option (key getter) or all options (getter) or undefined (setter).
+             * @alias af.DbBackup.options
              */
             options: function(key, value) {
                 var opts = {};
@@ -418,6 +419,7 @@ function($, window, undefined) {
     /**
      * @returns {af.DbBackup.Data}
      * @constructor
+     * @alias af.DbBackup.Data
      */
     DbBackup.Data = function() {
         if (!(this instanceof DbBackup.Data)) {

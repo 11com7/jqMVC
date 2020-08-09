@@ -1,6 +1,7 @@
 /**
  * @fileOverview af.DbUpdater class
  * @namespace af
+ * @alias af.DbUpdater
  */
 af.DbUpdater = (function(/** af */ $) {
     'use strict';
@@ -77,23 +78,20 @@ af.DbUpdater = (function(/** af */ $) {
 
     /**
      * @class DbUpdater
-     * @namespace af.DbUpdater
-     * @this DbUpdater.prototype
-     * @param {$.db} db
+     * @param {af.DatabaseAdapter} $db
      * @param {af.DbUpdater.defaultOptions} [options]
      */
-    function DbUpdater(db, options)
+    function DbUpdater($db, options)
     {
         if (!(this instanceof DbUpdater)) {
-            return new DbUpdater(db, options);
+            return new DbUpdater($db, options);
         }
-
 
         /**
          * 11com7 sql database helper.
-         * @type {$.db}
+         * @type {af.DatabaseAdapter}
          */
-        this._db = db || $.db;
+        this._$db = $db || $.db || throw new Error('Please set `$db` as argument or assure that a DatabaseAdapter instance is exposed as `$.db`');;
 
         /**
          * @type {DbUpdater.prototype.defaultOptions}
@@ -191,7 +189,7 @@ af.DbUpdater = (function(/** af */ $) {
         this._runtimeInfo = {};
         this.resetRuntimeInfo();
 
-        this._db.addTable(
+        this._$db.addTable(
             this._options.versionTable,
             [
                 ["version", "INTEGER", "NOT NULL UNIQUE"],
@@ -202,11 +200,6 @@ af.DbUpdater = (function(/** af */ $) {
         return this;
     }
 
-
-    /**
-     * @extends DbUpdater.prototype
-     * @namespace af.DbUpdater
-     */
     DbUpdater.prototype =
         {
             /**
@@ -220,7 +213,7 @@ af.DbUpdater = (function(/** af */ $) {
             /**
              * @param {function(SQLTransaction)} func
              * @return {DbUpdater}
-             * @this DbUpdater
+             * @alias af.DbUpdater.addInitFunction
              */
             addInitFunction: function(func) {
                 if (this._status > STATUS_INIT) {
@@ -240,6 +233,7 @@ af.DbUpdater = (function(/** af */ $) {
              * @param {!Number} vers  version, has to be a continuous increasing integer (1, 2, 3, 4, …) version number
              * @param {function(SQLTransaction)} func
              * @return {DbUpdater}
+             * @alias af.DbUpdater.addUpdateFunction
              */
             addUpdateFunction: function(vers, func) {
                 if (this._status > STATUS_INIT) {
@@ -267,6 +261,7 @@ af.DbUpdater = (function(/** af */ $) {
              * @this {DbUpdater}
              * @param {function()} func
              * @return {DbUpdater}
+             * @alias af.DbUpdater.addReadyFunction
              */
             addReadyFunction: function(func) {
                 if (this._status > STATUS_INIT) {
@@ -288,6 +283,7 @@ af.DbUpdater = (function(/** af */ $) {
             // --------------------------------------------------------------------------------
             /**
              * @return {DbUpdater}
+             * @alias af.DbUpdater.execute
              */
             execute: function() {
                 if (this._status > STATUS_INIT) {
@@ -296,7 +292,7 @@ af.DbUpdater = (function(/** af */ $) {
                 }
 
                 // nothing to do
-                if (this._initFuncs.length == 0 && this._updateFuncs.length == 0 && this._readyFunc.length == 0) {
+                if (0 === this._initFuncs.length && 0 === this._updateFuncs.length && 0 === this._readyFunc.length) {
                     return this;
                 }
 
@@ -313,11 +309,11 @@ af.DbUpdater = (function(/** af */ $) {
 
                 // get version number -> no version table ==> init ELSE update
                 this._openDatabase();
-                this._database.transaction(
+                this._connection.transaction(
                     function(tx) {
                         var sql = "SELECT MAX(version) as version FROM " + self._options.versionTable;
-                        $.db.executeSql(tx, sql, [],
-                                        /**
+                        self._$db.executeSql(tx, sql, [],
+                                             /**
                                          * UPDATE
                                          * @param {SQLTransaction} tx
                                          * @param {SQLResultSet} results
@@ -334,10 +330,10 @@ af.DbUpdater = (function(/** af */ $) {
                                             else {
                                                 self.dbg("CORRUPT VERSION TABLE --> TRY RE-INIT");
                                                 sql = "DROP TABLE " + self._options.versionTable;
-                                                $.db.executeSql(tx, sql, self._prepareInitExecution.call(self));
+                                                self._$db.executeSql(tx, sql, self._prepareInitExecution.call(self));
                                             }
                                         },
-                                        /**
+                                             /**
                                          * INIT OR ERROR
                                          * @param {SQLTransaction} tx
                                          * @param {SQLError} error
@@ -349,7 +345,7 @@ af.DbUpdater = (function(/** af */ $) {
                                             }
                                             // ERROR
                                             else {
-                                                throw new Error($.db.SqlError(error));
+                                                throw new Error(self._$db.SqlError(error));
                                             }
                                         }
                         );
@@ -364,6 +360,7 @@ af.DbUpdater = (function(/** af */ $) {
              * Re-Starts the execution after execution() has been called before.
              * @param {function(SQLTransaction)} readyCallback
              * @returns {DbUpdater}
+             * @alias af.DbUpdater.reExecute
              */
             reExecute: function(readyCallback) {
                 if (!this._alreadyExecuted) {
@@ -463,7 +460,7 @@ af.DbUpdater = (function(/** af */ $) {
                     this.dbg("execute version: #" + version);
 
                     var self = this;
-                    this._database.transaction(
+                    this._connection.transaction(
                         function(tx) {
                             if (!self._alreadyExecuted || self._options.triggerEventsOnReExecute) {
                                 $.trigger(self, EVENT_PROGRESS, [{"value": ++self._runTick, "max": self._runFuncsMax}]);
@@ -478,7 +475,7 @@ af.DbUpdater = (function(/** af */ $) {
                             if ($.isFunction(self._options.errorFunc)) {
                                 self._options.errorFunc.call(self.runtimeInfo(), error);
                             } else {
-                                throw new Error($.db.SqlError(error));
+                                throw new Error(self._$db.SqlError(error));
                             }
                         },
                         // SUCCESS
@@ -512,7 +509,7 @@ af.DbUpdater = (function(/** af */ $) {
                 this.dbg("set version to #" + version);
                 var sql = "INSERT OR IGNORE INTO " + this._options.versionTable + " (version) VALUES (?)";
                 //noinspection JSValidateTypes
-                $.db.executeSql(tx, sql, [version]);
+                self._$db.executeSql(tx, sql, [version]);
             },
 
 
@@ -524,7 +521,7 @@ af.DbUpdater = (function(/** af */ $) {
                 this._status = STATUS_READY;
                 this.runtimeInfo('info', 'ready');
 
-                if (!this._alreadyExecuted_alreadyExecuted || this._options.triggerEventsOnReExecute) {
+                if (!this._alreadyExecuted || this._options.triggerEventsOnReExecute) {
                     $.trigger(this, EVENT_READY);
                 }
 
@@ -576,6 +573,7 @@ af.DbUpdater = (function(/** af */ $) {
              * @param {Object|String} [opts]  (String) for key getter/setter
              * @param {*} [value]
              * @returns {*|Object|null}
+             * @alias af.DbUpdater.runtimeInfo
              */
             runtimeInfo: function(opts, value) {
                 this._runtimeInfo.status = this._status; // always refresh status on call!
@@ -593,7 +591,7 @@ af.DbUpdater = (function(/** af */ $) {
                 }
                 // key-value-setter
                 else if (2 === arguments.length) {
-                    if ('' == opts) {
+                    if ('' === opts) {
                         throw new TypeError('opts has to be a non empty string');
                     }
                     var key = opts;
@@ -625,6 +623,7 @@ af.DbUpdater = (function(/** af */ $) {
             /**
              * resets the runtime informations.
              * will be called on init and reExecute.
+             * @alias af.DbUpdater.resetRuntimeInfo
              */
             resetRuntimeInfo: function() {
                 this._runtimeInfo = {
@@ -643,8 +642,8 @@ af.DbUpdater = (function(/** af */ $) {
              * assigns (opens) the html database if not assigned.
              */
             _openDatabase: function() {
-                if (!this._database) {
-                    this._database = this._db.getDatabase();
+                if (!this._connection) {
+                    this._connection = this._$db.getConnection();
                 }
             },
             /**
@@ -661,6 +660,7 @@ af.DbUpdater = (function(/** af */ $) {
             /**
              * @readonly
              * @enum {Number}
+             * @alias af.DbUpdater.STATUS
              */
             STATUS:
                 {
@@ -674,6 +674,7 @@ af.DbUpdater = (function(/** af */ $) {
             /**
              * @readonly
              * @enum {String}
+             * @alias af.DbUpdater.EVENT
              */
             EVENT:
                 {
@@ -700,7 +701,6 @@ af.DbUpdater = (function(/** af */ $) {
                     recallReadyFunctionsOnReExecute: false
                 }
         };
-
 
     return DbUpdater;
 })(af);
