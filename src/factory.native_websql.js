@@ -35,5 +35,10 @@
             throw new TypeError('name has to be a non-empty string!');
         }
     }
-    $.DbConnectionNativeWebSql = NativeWebSqlFactory;
+
+    /**
+     * @type {NativeWebSqlFactory}
+     * @alias af.DbConnectionFactoryNativeWebSql
+     */
+    $.DbConnectionFactoryNativeWebSql = NativeWebSqlFactory;
 })(af, window);

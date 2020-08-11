@@ -31,10 +31,10 @@
     /**
      * Factory for SqlitPlugin databases.
      *
-     * @alias af.PluginSqliteFactory
      * @type {PluginSqliteFactory}
+     * @alias af.DbConnectionFactoryPluginSqlite
      *
      * @see https://github.com/brodybits/cordova-sqlite-ext
      */
-    $.DbFactoryPluginSqlite = PluginSqliteFactory;
+    $.DbConnectionFactoryPluginSqlite = PluginSqliteFactory;
 })(af, window);
