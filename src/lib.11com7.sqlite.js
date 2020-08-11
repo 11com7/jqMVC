@@ -534,6 +534,8 @@ function($, window, undefined) {
      * @param tableConstraints
      */
     DatabaseAdapter.prototype.setTableConstraints = function(tableName, tableConstraints) {
+        var self = this;
+
         if (!tableName) {
             throw new Error("missing or empty tableName");
         }
@@ -556,7 +558,7 @@ function($, window, undefined) {
                                         "]; NEEDS 3 elements: ['INDEX', indexName, 'field[,fieldN]'|[fields]!"
                     );
                 }
-                this.addIndex(element[1], tableName, element[2]);
+                self.addIndex(element[1], tableName, element[2]);
 
                 // remove element
                 return false;
@@ -1009,10 +1011,10 @@ function($, window, undefined) {
             throw new Error("columns is '" + (typeof columns) + "' instead of an array");
         }
 
-        var lastCol = null;
+        var lastCol = null, self = this;
         if (!columns.every(function(col) {
             lastCol = col;
-            return this.columnExists(entityName, col);
+            return self.columnExists(entityName, col);
         })) {
             throw new Error("column '" + lastCol + "' doesn't exists in '" + entityName + "'");
         }
