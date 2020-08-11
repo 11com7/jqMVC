@@ -75,9 +75,7 @@ function($, window, undefined) {
      */
     function DatabaseAdapter(connectionFactory, options)
     {
-        if (!connectionFactory || !connectionFactory.openDatabase || 'function' !== typeof connectionFactory.openDatabase) {
-            throw new TypeError('conectionFactory has to be a connection factory with `openDatabase` as function');
-        }
+        _checkConnectionFactory(connectionFactory);
 
         if (!(this instanceof DatabaseAdapter)) {
             return new DatabaseAdapter(connectionFactory, options);
@@ -2351,6 +2349,28 @@ function($, window, undefined) {
     // ===================================================================================================================
     // helper functions
     // ===================================================================================================================
+    /**
+     * Checks an object for connection factory interface.
+     *
+     * `connectionFactory`:
+     * * HAS to be an object
+     * * MUST have a function `openDatabase()`
+     *
+     * @param {Object} connectionFactory
+     *
+     * @throws TypeError ; for invalid arguments
+     *
+     * @private
+     */
+    function _checkConnectionFactory(connectionFactory)
+    {
+        if (!connectionFactory || !isObject(connectionFactory) ||
+            !connectionFactory.openDatabase || 'function' !== typeof connectionFactory.openDatabase) {
+            throw new TypeError('conectionFactory has to be a connection factory with `openDatabase` as function');
+        }
+    }
+
+
     /**
      * @param type {string} type to check (e. g. 'undefined', 'null', 'Array', 'Object', 'Function', 'String', 'Number', 'Boolean')
      * @param obj {*} the object
