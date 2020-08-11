@@ -99,7 +99,8 @@ function($, window, undefined) {
          * @type {*|DatabaseAdapter.prototype.defaultOptions} database options
          * @private
          */
-        this.options = this.setOptions(options);
+        this.options = $.extend({}, DatabaseAdapter.prototype.defaultOptions);
+        this.setOptions(options);
 
         /**
          * @type {string}
@@ -149,7 +150,7 @@ function($, window, undefined) {
             Object.defineProperty(this, key, {writable: true, enumerable: false, configurable: false});
         });
 
-        if (!!this.options.autoExport) {
+        if (!!this.options.autoExposeAsDb) {
             $.db = this;
         }
     }
@@ -162,7 +163,7 @@ function($, window, undefined) {
         autoCollate: "NOCASE",
         autoCollateTypes: /^(?:CHAR|VARCHAR|TEXT|CHARACTER)/i,
         autoDefault: true,
-        autoExport: false,
+        autoExposeAsDb: false,
         dropOnInit: false,
         timestamp_create: 'dt_create',
         timestamp_change: 'dt_change',
@@ -350,7 +351,7 @@ function($, window, undefined) {
      * @param {*} [value] for single option change
      */
     DatabaseAdapter.prototype.setOptions = function(options, value) {
-        if ("string" === typeof options) {
+        if ('string' === typeof options) {
             if (this.options.hasOwnProperty(options)) {
                 var key = options;
                 options = {};
@@ -360,8 +361,8 @@ function($, window, undefined) {
             }
         }
 
-        for (var key in this.options) {
-            if (options.hasOwnProperty(key)) {
+        for (var key in options) {
+            if (this.options.hasOwnProperty(key)) {
                 this.options[key] = options[key];
             }
         }
