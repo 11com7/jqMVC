@@ -312,6 +312,35 @@ function($, window, undefined) {
     };
 
     /**
+     * Change the connection factory (database).
+     *
+     * If the database connection was open, it will be closed and the new connection
+     * will be opened immediately.
+     *
+     * @param {Object} connectionFactory database connection factory interface
+     */
+    DatabaseAdapter.prototype.reconnect = function(connectionFactory) {
+        if (connectionFactory === this.connectionFactory) {
+            return;
+        }
+
+        _checkConnectionFactory(connectionFactory);
+
+        var isOpened = this.isOpen();
+        if (isOpened) {
+            this.dbg('reconnect() -> close previous connection');
+            this.close();
+        }
+
+        this.connectionFactory = connectionFactory;
+
+        if (isOpened) {
+            this.dbg('reconnect() -> reopen new connection');
+            this.open();
+        }
+    };
+
+    /**
      * Close the database if opened.
      */
     DatabaseAdapter.prototype.close = function() {
