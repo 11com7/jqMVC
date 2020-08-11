@@ -295,6 +295,7 @@ function($, window, undefined) {
     DatabaseAdapter.prototype.open = function() {
         if (!this.isOpen()) {
             try {
+                this.dbg('open() --> open connnection');
                 this.connection = this.connectionFactory.openDatabase();
                 this._trigger('SQL:open');
             } catch (e) {
@@ -315,6 +316,8 @@ function($, window, undefined) {
      */
     DatabaseAdapter.prototype.close = function() {
         if (this.isOpen()) {
+            this.dbg('close() --> close connection');
+
             this.connection.close();
             this.connection = null;
             this._trigger('SQL:close');
@@ -2425,6 +2428,5 @@ function($, window, undefined) {
     }
 
     $.DatabaseAdapter = DatabaseAdapter;
-})
-(af, window);
+})(af, window);
 ;
