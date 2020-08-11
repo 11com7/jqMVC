@@ -1096,8 +1096,12 @@ function($, window, undefined) {
             this._initDb(tx, readyCallback);
         }
 
-        function _openCallback()
+        function _openCallback(event)
         {
+            if (!event.data || !event.data.instance || self !== event.data.instance) {
+                return;
+            }
+
             if (self.options.debug) {
                 self.dbg('initDb(...) --> SQL:open -> unregister callback and call this._initDb()');
             }
