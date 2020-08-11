@@ -641,7 +641,7 @@ function($, window, undefined) {
         /** @type {db.View} */
         var viewObj = this.views[viewName];
 
-        this.db.setViewColumns(viewName, columns);
+        this.setViewColumns(viewName, columns);
     };
 
 
@@ -854,10 +854,10 @@ function($, window, undefined) {
      * @return {Object} {tableName : tableDefinition, ...}
      */
     DatabaseAdapter.prototype.getAllTableDefinitions = function() {
-        var definitions = {}, tables = this.db.getTables();
+        var definitions = {}, tables = this.getTables();
 
         for (var t = 0; t < tables.length; t++) {
-            definitions[tables[t]] = this.db.getTables(tables[t]);
+            definitions[tables[t]] = this.getTables(tables[t]);
         }
 
         return definitions;
@@ -988,7 +988,7 @@ function($, window, undefined) {
      */
     DatabaseAdapter.prototype.columnExists = function(entityName, column) {
         return entityName && column &&
-            this.db.entityExists(entityName) && this._getColumnIndex(entityName, column) > -1;
+            this.entityExists(entityName) && this._getColumnIndex(entityName, column) > -1;
     };
 
 
