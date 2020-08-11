@@ -414,6 +414,7 @@ function($, window, undefined) {
             $(document).bind('SQL:close', _doDbClose);
 
             if (!!event.data.instance && self === event.data.instance) {
+                self.dbg('ready() --> call ' + self.readyCallbacks.length + ' ready callback(s).');
                 self.readyCallbacks.forEach(function(callback) {
                     callback(self.connection);
                 });
