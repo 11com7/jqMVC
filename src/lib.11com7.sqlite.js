@@ -1665,7 +1665,9 @@ function($, window, undefined) {
      */
     DatabaseAdapter.prototype.dbg = function() {
         if (this.options.debug && console && console.log) {
-            console.log.apply(console, arguments);
+            var name = "DB['" + (this.connectionFactory.name || '') + "']:", args = Array.prototype.slice.call(arguments);
+            args.unshift(name);
+            console.log.apply(console, args);
         }
     };
 
