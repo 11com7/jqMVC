@@ -29,24 +29,24 @@ function($, window, undefined) {
     var
         // templates
         SQL_DT_DEFAULT = "STRFTIME('%s', 'NOW')",
-        SQL_DT_CONSTRAINTS = "NOT NULL DEFAULT (" + SQL_DT_DEFAULT + ")",
-        SQL_CREATE_TABLE = "CREATE TABLE IF NOT EXISTS <%=table%> (<%=fields%><%=constraints%>);",
-        SQL_CREATE_INDEX = "CREATE<%=unique%> INDEX IF NOT EXISTS <%=name%> ON <%=table%> (<%=fields%>);",
-        SQL_CREATE_VIEW = "CREATE VIEW IF NOT EXISTS <%=name%> AS <%=select%>;",
-        SQL_DROP_TABLE = "DROP TABLE IF EXISTS <%=table%>;",
-        SQL_DROP_TRIGGER = "DROP TRIGGER IF EXISTS <%=trigger%>;",
-        SQL_DROP_INDEX = "DROP INDEX IF EXISTS <%=index%>;",
-        SQL_DROP_VIEW = "DROP VIEW IF EXISTS <%=view%>;",
-        SQL_CREATE_TRIGGER = "CREATE TRIGGER IF NOT EXISTS <%=trigger%> <%=definition%>",
-        SQL_DT_CHANGE_TRIGGER = " AFTER UPDATE ON <%=table%> " +
-            "BEGIN " +
-            "UPDATE <%=table%> SET dt_change = " + SQL_DT_DEFAULT + " WHERE new.id = id; " +
-            "END;",
+        SQL_DT_CONSTRAINTS = 'NOT NULL DEFAULT (' + SQL_DT_DEFAULT + ')',
+        SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS <%=table%> (<%=fields%><%=constraints%>);',
+        SQL_CREATE_INDEX = 'CREATE<%=unique%> INDEX IF NOT EXISTS <%=name%> ON <%=table%> (<%=fields%>);',
+        SQL_CREATE_VIEW = 'CREATE VIEW IF NOT EXISTS <%=name%> AS <%=select%>;',
+        SQL_DROP_TABLE = 'DROP TABLE IF EXISTS <%=table%>;',
+        SQL_DROP_TRIGGER = 'DROP TRIGGER IF EXISTS <%=trigger%>;',
+        SQL_DROP_INDEX = 'DROP INDEX IF EXISTS <%=index%>;',
+        SQL_DROP_VIEW = 'DROP VIEW IF EXISTS <%=view%>;',
+        SQL_CREATE_TRIGGER = 'CREATE TRIGGER IF NOT EXISTS <%=trigger%> <%=definition%>',
+        SQL_DT_CHANGE_TRIGGER = ' AFTER UPDATE ON <%=table%> ' +
+            'BEGIN ' +
+            'UPDATE <%=table%> SET dt_change = ' + SQL_DT_DEFAULT + ' WHERE new.id = id; ' +
+            'END;',
 
         // Timestamp templates
         timestampTpl = {
             INTEGER: "MAX(0, 1*STRFTIME('%s', ?))", // <-- preserve 0-value as 0 BUT only for dates since 1970-01-01
-            TEXT: "STRFTIME('%Y-%m-%d %H:%M:%S', ?)", // <-- 'NOW' needs here an additional modifier ", LOCALTIME"
+            TEXT: "STRFTIME('%Y-%m-%d %H:%M:%S', ?)", // <-- 'NOW' needs here an additional modifier ', LOCALTIME'
             NUMERIC: "STRFTIME('%J', ?)"
         },
         db2dateConverter = {
@@ -1226,7 +1226,7 @@ function($, window, undefined) {
         var sql;
 
         if (!this.isIndex(index)) {
-            throw new TypeError("unknown index: '" + index + "' (" + getType(index) + ")");
+            throw new TypeError("unknown index: '" + index + "' (" + getType(index) + ')');
         }
 
         if (!!this.options.dropOnInit || !!force) {
