@@ -339,7 +339,7 @@ function($, window, undefined) {
     DatabaseAdapter.prototype._trigger = function(event) {
         //noinspection JSValidateTypes
         var $document = $(document);
-        $document.trigger.apply($document, [{'instance': this, 'connection': this.connection}]);
+        $document.trigger.apply($document, [event, {'instance': this, 'connection': this.connection}]);
     }
 
 
