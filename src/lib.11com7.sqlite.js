@@ -297,7 +297,7 @@ function($, window, undefined) {
     DatabaseAdapter.prototype.open = function() {
         if (!this.isOpen()) {
             try {
-                this.connection = this.connectionFactory();
+                this.connection = this.connectionFactory.openDatabase();
                 this._trigger('SQL:open');
             } catch (e) {
                 throw new Error(
