@@ -54,26 +54,26 @@ af.DbUpdater = (function(/** af */ $) {
      * Event: will be triggered when execution starts.
      * @const
      */
-    var EVENT_EXECUTE = "execute";
+    var EVENT_EXECUTE = 'execute';
 
     /**
      * Event: will be triggered for every executed init- or update function.
      * @const
      */
-    var EVENT_PROGRESS = "progress";
+    var EVENT_PROGRESS = 'progress';
 
     /**
      *
      this._options = $.extend({}, this.defaultOptions, options);Event: will be triggered after all init- or update function are executed.
      * @const
      */
-    var EVENT_READY = "ready";
+    var EVENT_READY = 'ready';
 
     /**
      * Event: will be triggered after all ready function are executed.
      * @const
      */
-    var EVENT_DONE = "done";
+    var EVENT_DONE = 'done';
 
 
     /**
@@ -192,8 +192,8 @@ af.DbUpdater = (function(/** af */ $) {
         this._$db.addTable(
             this._options.versionTable,
             [
-                ["version", "INTEGER", "NOT NULL UNIQUE"],
-                ["dt_create"]
+                ['version', 'INTEGER', 'NOT NULL UNIQUE'],
+                ['dt_create']
             ]
         );
 
@@ -217,10 +217,10 @@ af.DbUpdater = (function(/** af */ $) {
              */
             addInitFunction: function(func) {
                 if (this._status > STATUS_INIT) {
-                    throw new Error("DbUpdater error: already in execution or executed. Please use addInitFunction() before execute().");
+                    throw new Error('DbUpdater error: already in execution or executed. Please use addInitFunction() before execute().');
                 }
 
-                this.dbg("addInitFunction(", typeof (func), ")");
+                this.dbg('addInitFunction(', typeof (func), ')');
 
                 if (!!func && $.isFunction(func)) {
                     this._initFuncs.push(func);
@@ -237,16 +237,16 @@ af.DbUpdater = (function(/** af */ $) {
              */
             addUpdateFunction: function(vers, func) {
                 if (this._status > STATUS_INIT) {
-                    throw new Error("DbUpdater error: already in execution or executed. Please use addUpdateFunction() before execute().");
+                    throw new Error('DbUpdater error: already in execution or executed. Please use addUpdateFunction() before execute().');
                 }
 
                 var version = vers > 0 ? vers : this._getUpdateFuncVersionMax() + 1;
-                this.dbg("addUpdateFunction(", vers, typeof (func), ") --> version: ", version);
+                this.dbg('addUpdateFunction(', vers, typeof (func), ') --> version: ', version);
 
                 if (this._updateFuncs.length > 0) {
                     var prevVersion = this._updateFuncs[this._updateFuncs.length - 1][0];
                     if (version <= prevVersion) {
-                        throw new Error("DbUpdater error: new version (" + version + ") is lower or equal than the previous version (" + prevVersion + "). Please use increasing version numbers.");
+                        throw new Error('DbUpdater error: new version (' + version + ') is lower or equal than the previous version (' + prevVersion + '). Please use increasing version numbers.');
                     }
                 }
 
@@ -265,10 +265,10 @@ af.DbUpdater = (function(/** af */ $) {
              */
             addReadyFunction: function(func) {
                 if (this._status > STATUS_INIT) {
-                    throw new Error("DbUpdater error: exceute() has already called. Please use addReadyFunction() before execute().");
+                    throw new Error('DbUpdater error: exceute() has already called. Please use addReadyFunction() before execute().');
                 }
 
-                this.dbg("addReadyFunction(", typeof (func), ")");
+                this.dbg('addReadyFunction(', typeof (func), ')');
 
                 if (!!func && $.isFunction(func)) {
                     this._readyFuncs.push(func);
@@ -287,7 +287,7 @@ af.DbUpdater = (function(/** af */ $) {
              */
             execute: function() {
                 if (this._status > STATUS_INIT) {
-                    console.error("DbUpdater error: exceute() has already called. Please use re-execute!");
+                    console.error('DbUpdater error: exceute() has already called. Please use re-execute!');
                     return this;
                 }
 
@@ -311,7 +311,7 @@ af.DbUpdater = (function(/** af */ $) {
                 this._openDatabase();
                 this._connection.transaction(
                     function(tx) {
-                        var sql = "SELECT MAX(version) as version FROM " + self._options.versionTable;
+                        var sql = 'SELECT MAX(version) as version FROM ' + self._options.versionTable;
                         self._$db.executeSql(tx, sql, [],
                                              /**
                                          * UPDATE
@@ -328,8 +328,8 @@ af.DbUpdater = (function(/** af */ $) {
                                             }
                                             // error corrupt version table => try init
                                             else {
-                                                self.dbg("CORRUPT VERSION TABLE --> TRY RE-INIT");
-                                                sql = "DROP TABLE " + self._options.versionTable;
+                                                self.dbg('CORRUPT VERSION TABLE --> TRY RE-INIT');
+                                                sql = 'DROP TABLE ' + self._options.versionTable;
                                                 self._$db.executeSql(tx, sql, self._prepareInitExecution.call(self));
                                             }
                                         },
@@ -340,7 +340,7 @@ af.DbUpdater = (function(/** af */ $) {
                                          */
                                         function(tx, error) {
                                             // ==> INIT
-                                            if (error.message.toLowerCase().indexOf("no such table") > -1) {
+                                            if (error.message.toLowerCase().indexOf('no such table') > -1) {
                                                 self._prepareInitExecution.call(self);
                                             }
                                             // ERROR
@@ -364,7 +364,7 @@ af.DbUpdater = (function(/** af */ $) {
              */
             reExecute: function(readyCallback) {
                 if (!this._alreadyExecuted) {
-                    throw new Error("DbUpdater error: exceute() has to be runned before.");
+                    throw new Error('DbUpdater error: exceute() has to be runned before.');
                 }
 
                 this._status = STATUS_INIT;
@@ -403,7 +403,7 @@ af.DbUpdater = (function(/** af */ $) {
 
 
             _prepareUpdateExecution: function(version) {
-                this.dbg("found version number", version, "=> type UPDATE");
+                this.dbg('found version number', version, '=> type UPDATE');
                 this._type = TYPE_UPDATE;
 
                 this.runtimeInfo('info', 'update:' + version);
@@ -457,20 +457,20 @@ af.DbUpdater = (function(/** af */ $) {
                                          info: 'next'
                                      });
 
-                    this.dbg("execute version: #" + version);
+                    this.dbg('execute version: #' + version);
 
                     var self = this;
                     this._connection.transaction(
                         function(tx) {
                             if (!self._alreadyExecuted || self._options.triggerEventsOnReExecute) {
-                                $.trigger(self, EVENT_PROGRESS, [{"value": ++self._runTick, "max": self._runFuncsMax}]);
+                                $.trigger(self, EVENT_PROGRESS, [{'value': ++self._runTick, 'max': self._runFuncsMax}]);
                             }
 
                             func.call(null, tx, version);
                         },
                         // ERROR
                         function(error) {
-                            self.dbg("SQL-ERROR (Version " + version + ") --- ROLL BACK --- !");
+                            self.dbg('SQL-ERROR (Version ' + version + ') --- ROLL BACK --- !');
 
                             if ($.isFunction(self._options.errorFunc)) {
                                 self._options.errorFunc.call(self.runtimeInfo(), error);
@@ -480,7 +480,7 @@ af.DbUpdater = (function(/** af */ $) {
                         },
                         // SUCCESS
                         function(tx, results) {
-                            self.dbg("Update installed (Version " + version + ")");
+                            self.dbg('Update installed (Version ' + version + ')');
 
                             if (version > 0) {
                                 self._insertVersion(tx, version);
@@ -488,10 +488,10 @@ af.DbUpdater = (function(/** af */ $) {
 
                             // lastUpdateFunc??? ==> ready!
                             if (0 === self._runFuncs.length) {
-                                self.dbg("--> EXECUTE READY");
+                                self.dbg('--> EXECUTE READY');
                                 readyCallback.call(self, results);
                             } else {
-                                self.dbg("--> EXECUTE NEXT UPDATE");
+                                self.dbg('--> EXECUTE NEXT UPDATE');
                                 self._nextExecution(readyCallback);
                             }
                         }
@@ -499,17 +499,17 @@ af.DbUpdater = (function(/** af */ $) {
                 }
                 // nothing to do!
                 else {
-                    this.dbg("NOTHING TODO --> EXECUTE READY");
+                    this.dbg('NOTHING TODO --> EXECUTE READY');
                     readyCallback.call(this, null);
                 }
             },
 
 
             _insertVersion: function(tx, version) {
-                this.dbg("set version to #" + version);
-                var sql = "INSERT OR IGNORE INTO " + this._options.versionTable + " (version) VALUES (?)";
+                this.dbg('set version to #' + version);
+                var sql = 'INSERT OR IGNORE INTO ' + this._options.versionTable + ' (version) VALUES (?)';
                 //noinspection JSValidateTypes
-                self._$db.executeSql(tx, sql, [version]);
+                this._$db.executeSql(tx, sql, [version]);
             },
 
 
@@ -517,7 +517,7 @@ af.DbUpdater = (function(/** af */ $) {
             // READY CALLBACKS
             // --------------------------------------------------------------------------------
             _prepareReadyCallbacks: function() {
-                this.dbg("==> READY -->", (!this._alreadyExecuted || this._options.recallReadyFunctionsOnReExecute) ? '' : "don't", "call ready functions");
+                this.dbg('==> READY -->', (!this._alreadyExecuted || this._options.recallReadyFunctionsOnReExecute) ? '' : "don't", 'call ready functions');
                 this._status = STATUS_READY;
                 this.runtimeInfo('info', 'ready');
 
@@ -530,7 +530,7 @@ af.DbUpdater = (function(/** af */ $) {
 
                 var self = this;
                 this._nextExecution(function() {
-                    self.dbg("==> DONE!");
+                    self.dbg('==> DONE!');
 
                     if (!this._alreadyExecuted || this._options.triggerEventsOnReExecute) {
                         $.trigger(self, EVENT_DONE);
@@ -559,7 +559,7 @@ af.DbUpdater = (function(/** af */ $) {
              */
             dbg: function() {
                 var debugMsgs = Array.prototype.slice.call(arguments);
-                debugMsgs.unshift("DbUpdater: ");
+                debugMsgs.unshift('DbUpdater: ');
                 this._options.debugFunc.apply(null, debugMsgs);
             },
 
@@ -694,7 +694,7 @@ af.DbUpdater = (function(/** af */ $) {
              */
             defaultOptions:
                 {
-                    versionTable: "_dbVersion",
+                    versionTable: '_dbVersion',
                     errorFunc: undefined,
                     debugFunc: null,
                     triggerEventsOnReExecute: false,

@@ -56,9 +56,9 @@ function($, window, undefined) {
             },
             // Safari needs some help (YYYY/MM/DD instead of YYYY-MM-DD)
             TEXT: function(dtstring) {
-                return new Date(dtstring.replace(/-/g, "/"));
+                return new Date(dtstring.replace(/-/g, '/'));
             },
-            // Julian Date: unix epoch = 2440587.5 JD + sqlite assumes each day as "[...] exactly 86400 seconds [...]" (see http://www.sqlite.org/lang_datefunc.html)
+            // Julian Date: unix epoch = 2440587.5 JD + sqlite assumes each day as '[...] exactly 86400 seconds [...]' (see http://www.sqlite.org/lang_datefunc.html)
             NUMERIC: function(juldate) {
                 return new Date((juldate - 2440587.5) * 86400.0 * 1000);
             }
@@ -162,7 +162,7 @@ function($, window, undefined) {
     // --------------------------------------------------------------------------------
     DatabaseAdapter.prototype.defaultOptions = {
         autoInit: true,
-        autoCollate: "NOCASE",
+        autoCollate: 'NOCASE',
         autoCollateTypes: /^(?:CHAR|VARCHAR|TEXT|CHARACTER)/i,
         autoDefault: true,
         autoExposeAsDb: false,
@@ -182,12 +182,12 @@ function($, window, undefined) {
     Object.defineProperties(
         DatabaseAdapter.prototype,
         {
-            "SQLITE_TABLE_MASTER": {value: "sqlite_master", writable: false, configurable: false},
-            "SQLITE_TABLE_AUTOINCREMENT": {value: "sqlite_sequence", writable: false, configurable: false},
-            "SQLITE_TYPE_TABLE": {value: "table", writable: false, configurable: false},
-            "SQLITE_TYPE_VIEW": {value: "view", writable: false, configurable: false},
-            "SQLITE_TYPE_TRIGGER": {value: "trigger", writable: false, configurable: false},
-            "SQLITE_TYPE_INDEX": {value: "index", writable: false, configurable: false}
+            'SQLITE_TABLE_MASTER': {value: 'sqlite_master', writable: false, configurable: false},
+            'SQLITE_TABLE_AUTOINCREMENT': {value: 'sqlite_sequence', writable: false, configurable: false},
+            'SQLITE_TYPE_TABLE': {value: 'table', writable: false, configurable: false},
+            'SQLITE_TYPE_VIEW': {value: 'view', writable: false, configurable: false},
+            'SQLITE_TYPE_TRIGGER': {value: 'trigger', writable: false, configurable: false},
+            'SQLITE_TYPE_INDEX': {value: 'index', writable: false, configurable: false}
         }
     );
 
@@ -201,13 +201,13 @@ function($, window, undefined) {
      * @namespace af.DatabaseAdapter.Select
      */
     DatabaseAdapter.prototype.Select = function() {
-        this.select = "";
-        this.from = "";
-        this.where = "";
-        this.group = "";
-        this.having = "";
-        this.order = "";
-        this.limit = "";
+        this.select = '';
+        this.from = '';
+        this.where = '';
+        this.group = '';
+        this.having = '';
+        this.order = '';
+        this.limit = '';
     };
 
     /**
@@ -240,16 +240,16 @@ function($, window, undefined) {
                 return undefined;
             }
 
-            separator = separator || " ";
+            separator = separator || ' ';
 
             if (isArray(this[attribute])) {
                 return this[attribute].join(separator);
             } else if (isObject(this[attribute]) && !!this[attribute].toString) {
                 return this[attribute].toString();
             } else if (isFunction(this[attribute])) {
-                return "" + this[attribute](this);
+                return '' + this[attribute](this);
             } else {
-                return "" + this[attribute];
+                return '' + this[attribute];
             }
         }
 
@@ -303,7 +303,7 @@ function($, window, undefined) {
                 throw new Error(
                     this.SqlError(
                         e,
-                        "",
+                        '',
                         "openDatabase('" + this.connectionFactory.name + "')"
                     ));
             }
@@ -405,13 +405,13 @@ function($, window, undefined) {
         if (this.isOpen()) {
             callback(this.connection);
         } else {
-            $(document).bind("SQL:open", _doDbOpen);
+            $(document).bind('SQL:open', _doDbOpen);
         }
 
         function _doDbOpen(event)
         {
-            $(document).unbind("SQL:open", _doDbOpen);
-            $(document).bind("SQL:close", _doDbClose);
+            $(document).unbind('SQL:open', _doDbOpen);
+            $(document).bind('SQL:close', _doDbClose);
 
             if (!!event.data.instance && self === event.data.instance) {
                 self.readyCallbacks.forEach(function(callback) {
@@ -422,8 +422,8 @@ function($, window, undefined) {
 
         function _doDbClose()
         {
-            $(document).unbind("SQL:close", _doDbClose);
-            $(document).bind("SQL:open", _doDbOpen);
+            $(document).unbind('SQL:close', _doDbClose);
+            $(document).bind('SQL:open', _doDbOpen);
         }
     };
 
@@ -439,7 +439,7 @@ function($, window, undefined) {
      */
     DatabaseAdapter.prototype.addTable = function(tableName, columns, tableConstraints) {
         if (!tableName) {
-            throw new Error("missing or empty tableName");
+            throw new Error('missing or empty tableName');
         }
 
         columns = columns || {};
@@ -459,10 +459,10 @@ function($, window, undefined) {
      */
     DatabaseAdapter.prototype.addTrigger = function(triggerName, trigger) {
         if (!triggerName) {
-            throw new Error("missing or empty triggerName");
+            throw new Error('missing or empty triggerName');
         }
         if (!trigger) {
-            throw new Error("missing or empty trigger");
+            throw new Error('missing or empty trigger');
         }
 
         this.triggers[triggerName] = trigger;
@@ -523,12 +523,12 @@ function($, window, undefined) {
      * INDEX command:
      * Allows to create an index for a table. Just add a constraint:
      * <code>
-     *   ["INDEX", indexName, column(s)]
+     *   ['INDEX', indexName, column(s)]
      *   // column(s) are defined as
      *   // - Array: [columnName0, ..., columnNameN-1] OR
-     *   // - String: "columnName" OR "columnName0, ..., columnNameN-1"
+     *   // - String: 'columnName' OR 'columnName0, ..., columnNameN-1'
      * </code>
-     * "PRIMARY KEY" or "UNIQUE" index(es) could be created as normal SQLite constraint.
+     * 'PRIMARY KEY' or 'UNIQUE' index(es) could be created as normal SQLite constraint.
      *
      * @param tableName
      * @param tableConstraints
@@ -537,7 +537,7 @@ function($, window, undefined) {
         var self = this;
 
         if (!tableName) {
-            throw new Error("missing or empty tableName");
+            throw new Error('missing or empty tableName');
         }
         if (!this.tableExists(tableName)) {
             throw new Error("tableName '" + tableName + "' isn't added/defined.");
@@ -551,10 +551,10 @@ function($, window, undefined) {
         // DatabaseAdapter allows it with the INDEX command.
         tableConstraints = tableConstraints.filter(function(element, index) {
 
-            if (element.hasOwnProperty(0) && "INDEX" === element[0].toUpperCase()) {
+            if (element.hasOwnProperty(0) && 'INDEX' === element[0].toUpperCase()) {
                 if (3 > element.length) {
                     throw new Error("unsupported INDEX table constraint declaration in '" +
-                                        tableName + ".tableContraints[" + index +
+                                        tableName + '.tableContraints[' + index +
                                         "]; NEEDS 3 elements: ['INDEX', indexName, 'field[,fieldN]'|[fields]!"
                     );
                 }
@@ -579,7 +579,7 @@ function($, window, undefined) {
      * Adds (or overwrites) an index.
      * @param {String} indexName
      * @param {String} tableName
-     * @param {Array|String} columns Array: [columnName0, ..., columnNameN-1]; String: "columnName" OR "columnName0, ..., columnNameN-1"
+     * @param {Array|String} columns Array: [columnName0, ..., columnNameN-1]; String: 'columnName' OR 'columnName0, ..., columnNameN-1'
      * @param {Boolean} [unique] default: false; create a unique index on true
      */
     DatabaseAdapter.prototype.addIndex = function(indexName, tableName, columns, unique) {
@@ -603,7 +603,7 @@ function($, window, undefined) {
             {
                 table: tableName,
                 columns: columns,
-                unique: (!!unique) ? " UNIQUE" : ""
+                unique: (!!unique) ? ' UNIQUE' : ''
             };
     };
 
@@ -634,10 +634,10 @@ function($, window, undefined) {
 
         this.views[viewName] =
             {
-                "columns": [],
-                "constraints": [], // <-- always empty!
-                "tables": $.extend({}, tables),
-                "select": $.extend(new this.Select(), select)
+                'columns': [],
+                'constraints': [], // <-- always empty!
+                'tables': $.extend({}, tables),
+                'select': $.extend(new this.Select(), select)
             };
 
         /** @type {db.View} */
@@ -659,7 +659,7 @@ function($, window, undefined) {
             throw new TypeError("unknown viewName '" + viewName + "'");
         }
         if (!isArray(columns)) {
-            throw new TypeError('columns has to be an array instead of (' + getType(columns) + ")");
+            throw new TypeError('columns has to be an array instead of (' + getType(columns) + ')');
         }
 
 
@@ -677,31 +677,31 @@ function($, window, undefined) {
 
             // FIND FOREIGN ENTITY
             if (!alias) {
-                throw new TypeError("Missing/empty table alias for '" + viewName + "." + col + "'");
+                throw new TypeError("Missing/empty table alias for '" + viewName + '.' + col + "'");
             }
 
             // table alias?
             if (alias in this.views[viewName].tables) {
                 foreignEntity = this._viewAlias2Entity(viewName, alias);
             } else {
-                throw new TypeError("unknown entity alias '" + alias + "' for '" + viewName + "." + col + "'");
+                throw new TypeError("unknown entity alias '" + alias + "' for '" + viewName + '.' + col + "'");
             }
 
             // CHECK FOREIGN COLUMN
             if (!this.columnExists(foreignEntity, foreignCol)) {
                 throw new TypeError("missing foreign column '" +
                                         foreignEntity + "'.'" + foreignCol +
-                                        "' for " + viewName + "." + col
+                                        "' for " + viewName + '.' + col
                 );
             }
 
             // FIND TYPE DEFINITIONS
             if (!columns[t][1]) {
-                colType = this._getColumnData(foreignEntity, foreignCol, "type");
-            } else if (is("String", columns[t][1])) {
+                colType = this._getColumnData(foreignEntity, foreignCol, 'type');
+            } else if (is('String', columns[t][1])) {
                 colType = columns[t][1];
             } else {
-                throw new TypeError("unknown column type definition '" + columns[t][1] + "' for " + viewName + "." + col);
+                throw new TypeError("unknown column type definition '" + columns[t][1] + "' for " + viewName + '.' + col);
             }
 
             columns[t] = [col, colType, alias, foreignCol];
@@ -751,43 +751,43 @@ function($, window, undefined) {
 
         // SELECT [ALL|DISTINCT]
         tmp = view.select.getString('select');
-        sql += (tmp) ? tmp + " " : "";
+        sql += (tmp) ? tmp + ' ' : '';
 
         // COLUMNS
         for (t = 0; t < view.columns.length; t++) {
             var col = view.columns[t];
-            columns.push(col[2] + "." + col[3] + (col[0] !== col[3] ? " AS " + col[0] : ""));
+            columns.push(col[2] + '.' + col[3] + (col[0] !== col[3] ? ' AS ' + col[0] : ''));
         }
-        sql += columns.join(", ") + " ";
+        sql += columns.join(', ') + ' ';
 
         // FROM
-        tmp = view.select.getString("from");
+        tmp = view.select.getString('from');
         for (var alias in view.tables) {
             if (view.tables.hasOwnProperty(alias)) {
-                tmp = tmp.replace("[" + alias + "]", view.tables[alias] + " as " + alias);
+                tmp = tmp.replace('[' + alias + ']', view.tables[alias] + ' as ' + alias);
             }
         }
-        sql += "FROM " + tmp + " ";
+        sql += 'FROM ' + tmp + ' ';
 
         // WHERE
-        tmp = view.select.getString("where");
-        sql += tmp ? "WHERE " + tmp + " " : "";
+        tmp = view.select.getString('where');
+        sql += tmp ? 'WHERE ' + tmp + ' ' : '';
 
         // GROUP BY
-        tmp = view.select.getString("group");
-        sql += tmp ? "GROUP BY " + tmp + " " : "";
+        tmp = view.select.getString('group');
+        sql += tmp ? 'GROUP BY ' + tmp + ' ' : '';
 
         // HAVING
-        tmp = view.select.getString("having");
-        sql += tmp ? "HAVING " + tmp + " " : "";
+        tmp = view.select.getString('having');
+        sql += tmp ? 'HAVING ' + tmp + ' ' : '';
 
         // ORDER BY
-        tmp = view.select.getString("order");
-        sql += tmp ? "ORDER BY " + tmp + " " : "";
+        tmp = view.select.getString('order');
+        sql += tmp ? 'ORDER BY ' + tmp + ' ' : '';
 
         // LIMIT
-        tmp = view.select.getString("limit");
-        sql += tmp ? "LIMIT " + tmp + " " : "";
+        tmp = view.select.getString('limit');
+        sql += tmp ? 'LIMIT ' + tmp + ' ' : '';
 
         return sql;
     }
@@ -873,7 +873,7 @@ function($, window, undefined) {
      */
     DatabaseAdapter.prototype.getColumns = function(tableName, column) {
         if (!tableName) {
-            throw new Error("missing tableName");
+            throw new Error('missing tableName');
         }
         if (!this.tableExists(tableName)) {
             throw new Error("tableName '" + tableName + "' isn't added/defined.");
@@ -895,13 +895,13 @@ function($, window, undefined) {
      */
     DatabaseAdapter.prototype.getColumnType = function(tableName, column) {
         if (!tableName) {
-            throw new Error("missing tableName");
+            throw new Error('missing tableName');
         }
         if (!this.tableExists(tableName)) {
             throw new Error("tableName '" + tableName + "' isn't added/defined.");
         }
         if (!column) {
-            throw new Error("missing column");
+            throw new Error('missing column');
         }
 
         var index = this._getColumnIndex(tableName, column);
@@ -909,7 +909,7 @@ function($, window, undefined) {
             throw new Error("column '" + tableName + "'.'" + column + "' isn't added/defined.");
         }
 
-        return this._getColumnData(tableName, index, "type");
+        return this._getColumnData(tableName, index, 'type');
     };
 
     /**
@@ -1057,21 +1057,21 @@ function($, window, undefined) {
 
         if (true === forceReInit) {
             if (this.options.debug) {
-                this.dbg("initDb(...) --> force init");
+                this.dbg('initDb(...) --> force init');
             }
             this.initialized = false
         }
 
         if (this.initialized) {
             if (this.options.debug) {
-                this.dbg("initDb(...) --> already initialized");
+                this.dbg('initDb(...) --> already initialized');
             }
             this._initReady(tx, readyCallback);
             return;
         }
 
         if (this.options.debug) {
-            this.dbg("initDb(...) --> start init");
+            this.dbg('initDb(...) --> start init');
         }
 
         if (!this.isOpen()) {
@@ -1081,11 +1081,11 @@ function($, window, undefined) {
                 }
 
                 //noinspection JSCheckFunctionSignatures,JSValidateTypes
-                $(document).on("SQL:open", _openCallback);
+                $(document).on('SQL:open', _openCallback);
             }
 
             if (this.options.debug) {
-                this.dbg("initDb(...) --> open db");
+                this.dbg('initDb(...) --> open db');
             }
             this.open();
         } else {
@@ -1098,10 +1098,10 @@ function($, window, undefined) {
         function _openCallback()
         {
             if (self.options.debug) {
-                self.dbg("initDb(...) --> SQL:open -> unregister callback and call this._initDb()");
+                self.dbg('initDb(...) --> SQL:open -> unregister callback and call this._initDb()');
             }
 
-            $(document).off("SQL:open", _openCallback);
+            $(document).off('SQL:open', _openCallback);
             self._initDb(null, readyCallback);
         }
     };
@@ -1117,7 +1117,7 @@ function($, window, undefined) {
         }
 
         if (!this.isOpen()) {
-            throw new Error("database not opened");
+            throw new Error('database not opened');
         }
 
         var self = this,
@@ -1173,7 +1173,7 @@ function($, window, undefined) {
     DatabaseAdapter.prototype._initReady = function(tx, callback) {
         if (isFunction(callback)) {
             if (this.options.debug) {
-                this.dbg("initDb(...) --> CALL READY CALLBACK!");
+                this.dbg('initDb(...) --> CALL READY CALLBACK!');
             }
             callback(tx);
         }
@@ -1270,7 +1270,7 @@ function($, window, undefined) {
             sqlColumns.push(this.getSqlColumn(tableName, columns[t]));
         }
 
-        return sqlColumns.join(", ");
+        return sqlColumns.join(', ');
     }
 
     /**
@@ -1416,7 +1416,7 @@ function($, window, undefined) {
         }
 
         // change arguments if data is successCallback
-        if (isFunction(data) && "undefined" === typeof errorCallback) {
+        if (isFunction(data) && 'undefined' === typeof errorCallback) {
             //noinspection JSValidateTypes
             errorCallback = successCallback;
             //noinspection JSValidateTypes
@@ -1718,14 +1718,14 @@ function($, window, undefined) {
             return errorObject.message;
         }
 
-        sql = sql || "sqlLast: »" + this.sqlLast + "«";
-        comment = comment || "";
+        sql = sql || 'sqlLast: »' + this.sqlLast + '«';
+        comment = comment || '';
 
         var
             code = (!!errorObject && !!errorObject.code) ? errorObject.code : -424242,
-            msg = (!!errorObject && !!errorObject.message) ? errorObject.message : "?unknown?";
+            msg = (!!errorObject && !!errorObject.message) ? errorObject.message : '?unknown?';
 
-        return "SQL ERROR #" + code + ": " + msg + " in '" + sql + "' --- " + comment;
+        return 'SQL ERROR #' + code + ': ' + msg + " in '" + sql + "' --- " + comment;
     };
 
 
@@ -1740,13 +1740,13 @@ function($, window, undefined) {
      * @param {SQLTransaction} [tx] the functions creates a SQLTransaction if necessary
      * @param {function(SQLTransaction, SQLResultSet)} [readyCallback]
      * @param {function(SQLTransaction, SQLError)} [errorCallback]
-     * @param {Object} [options] "onConflict":[ROLLBACK|ABORT|FAIL|IGNORE|REPLACE]
+     * @param {Object} [options] 'onConflict':[ROLLBACK|ABORT|FAIL|IGNORE|REPLACE]
      */
     DatabaseAdapter.prototype.insertMultiRows = function(tableName, columns, rows, tx, readyCallback, errorCallback, options) {
         var self = this;
 
         // start transaction if necessary
-        if (!tx || "object" !== typeof tx || !tx.executeSql) {
+        if (!tx || 'object' !== typeof tx || !tx.executeSql) {
             this.getConnection().transaction(function(tx) {
                 self.insertMultiRows(tableName, columns, rows, tx, readyCallback, errorCallback, options);
             });
@@ -1754,7 +1754,7 @@ function($, window, undefined) {
         }
 
         if (!tableName) {
-            throw new Error("missing or empty tableName");
+            throw new Error('missing or empty tableName');
         }
         if (!this.tableExists(tableName)) {
             throw new Error("tableName '" + tableName + "' isn't added/defined.");
@@ -1796,41 +1796,41 @@ function($, window, undefined) {
      * @param {String} tableName
      * @param {Array} columns
      * @param {Array} rows has to be an array with data arrays [[colData1, ..., colDataN], [...]]
-     * @param {Object} [options] "onConflict":[ROLLBACK|ABORT|FAIL|IGNORE|REPLACE]
+     * @param {Object} [options] 'onConflict':[ROLLBACK|ABORT|FAIL|IGNORE|REPLACE]
      * @return {String}
      */
     DatabaseAdapter.prototype.createSqlInsertMultiRows = function(tableName, columns, rows, options) {
         if (!rows || !rows.length || 1 > rows.length) {
-            return "";
+            return '';
         }
         if (999 < columns.length * rows.length) {
-            throw new Error("maximum number of place-holder variables (" + (columns.length * rows.length) + ") will be greater then 999");
+            throw new Error('maximum number of place-holder variables (' + (columns.length * rows.length) + ') will be greater then 999');
         }
 
         options = options || {};
 
         var
             onConflict = options.hasOwnProperty('onConflict') && options.onConflict ?
-                         " OR " + options.onConflict.trim().toUpperCase() :
+                         ' OR ' + options.onConflict.trim().toUpperCase() :
                          '',
-            sql = "INSERT" + onConflict + " INTO " + tableName + "(" + columns.join(',') + ") ";
+            sql = 'INSERT' + onConflict + ' INTO ' + tableName + '(' + columns.join(',') + ') ';
 
 
         // first row as select
         var asTmp = [], placeholders = [], placeholder;
         for (var t = 0; t < columns.length; t++) {
             placeholder = this.getColumnPlaceholder(tableName, columns[t]);
-            asTmp.push(placeholder + " as " + columns[t]);
+            asTmp.push(placeholder + ' as ' + columns[t]);
             placeholders.push(placeholder);
         }
 
-        sql += " SELECT " + asTmp.join(",");
+        sql += ' SELECT ' + asTmp.join(',');
 
         // then add the next rows as UNION ALL SELECT
         asTmp = [];
-        placeholder = placeholders.join(", ");
+        placeholder = placeholders.join(', ');
         for (t = 1; t < rows.length; t++) {
-            asTmp.push("UNION ALL SELECT " + placeholder);
+            asTmp.push('UNION ALL SELECT ' + placeholder);
         }
 
         sql += ' ' + asTmp.join(' ');
@@ -1881,14 +1881,14 @@ function($, window, undefined) {
                                 var name = results.rows.item(t).name;
                                 if (!ignoreNames.hasOwnProperty(name)) {
                                     self._trigger('SQL:drop:' + name);
-                                    self.executeSql(tx, "DROP " + results.rows.item(t).type + " IF EXISTS " + name, null);
+                                    self.executeSql(tx, 'DROP ' + results.rows.item(t).type + ' IF EXISTS ' + name, null);
                                 } else if (name === self.SQLITE_TABLE_AUTOINCREMENT) {
                                     sqliteSequenceExists = true;
                                 }
                             }
 
                             if (sqliteSequenceExists) {
-                                self.executeSql(tx, "DELETE FROM " +
+                                self.executeSql(tx, 'DELETE FROM ' +
                                     self.SQLITE_TABLE_AUTOINCREMENT +
                                     ' WHERE name=name', [], readyCallback); // delete all auto ids
                             } else {
@@ -1935,13 +1935,13 @@ function($, window, undefined) {
         }
 
 
-        this.executeSql(tx, "DELETE FROM " + tableName, [],
+        this.executeSql(tx, 'DELETE FROM ' + tableName, [],
                         // SUCCESS
                         function(tx, resultSet) {
                             self.ifExistsInDb(self.SQLITE_TABLE_AUTOINCREMENT,
                                               self.SQLITE_TYPE_TABLE, tx, function(tx) {
                                     // AUTOINCREMENT-TABLE EXISTS
-                                    self.executeSql(tx, "DELETE FROM " +
+                                    self.executeSql(tx, 'DELETE FROM ' +
                                         self.SQLITE_TABLE_AUTOINCREMENT + ' WHERE name=?', [tableName],
                                                     function(tx, resultSet) {
                                                         if (isFunction(successCallback)) {
@@ -1976,7 +1976,7 @@ function($, window, undefined) {
     /**
      * Searches an entity in the sqlite master table and calls a found or notExists callback function.
      * @param {String} name entity name
-     * @param {String|null|undefined|Boolean} [type=""] optional type filter for db.SQLITE_TYPE_ types
+     * @param {String|null|undefined|Boolean} [type=''] optional type filter for db.SQLITE_TYPE_ types
      * @param {SQLTransaction|null} tx (null) creates an auto transaction
      * @param {function(SQLTransaction)} existsCallback will be called after succeeded search
      * @param {function(SQLTransaction)} notExistsCallback will be called if 'name' (type) doesn't exists
@@ -1992,20 +1992,20 @@ function($, window, undefined) {
         }
 
         // TypeCheck
-        if (!is("String", name) || "" === name) {
-            throw new TypeError("name has to be a non empty string");
+        if (!is('String', name) || '' === name) {
+            throw new TypeError('name has to be a non empty string');
         }
 
 
         // create SQL
-        var sql = "SELECT COUNT(*) as cnt FROM " + this.SQLITE_TABLE_MASTER + " WHERE name = ?", data = [name];
+        var sql = 'SELECT COUNT(*) as cnt FROM ' + this.SQLITE_TABLE_MASTER + ' WHERE name = ?', data = [name];
 
         if (type) {
-            if (!is("String", type)) {
-                throw new TypeError("type has to be null|undefined|string");
+            if (!is('String', type)) {
+                throw new TypeError('type has to be null|undefined|string');
             }
 
-            sql += " AND type=?";
+            sql += ' AND type=?';
             data.push(type);
         }
 
@@ -2088,12 +2088,12 @@ function($, window, undefined) {
 
             if (_isDateType(colType)) {
                 if (!timestampTpl.hasOwnProperty(sqlType)) {
-                    throw new Error("ERROR unknown date type '" + colType + "' --> '" + sqlType + "' in " + tableName + "." + column);
+                    throw new Error("ERROR unknown date type '" + colType + "' --> '" + sqlType + "' in " + tableName + '.' + column);
                 }
 
                 return timestampTpl[sqlType];
             } else {
-                return "?";
+                return '?';
             }
         }
         // call a selection of columns => return Array!
@@ -2107,7 +2107,7 @@ function($, window, undefined) {
             var columns = this.getColumns(tableName);
             return columns.map(_columnPlaceholderMapper);
         } else {
-            throw new Error("ERROR: unsupported column type (" + (typeof column) + "). ");
+            throw new Error('ERROR: unsupported column type (' + (typeof column) + '). ');
         }
 
         /**
@@ -2155,7 +2155,7 @@ function($, window, undefined) {
      * Converts a sql date value to a JavaScript date object.
      * @param {Number|String} dbValue ! has to match the timestampType
      * @param {String} [timestampType]
-     * @return {Date} if timestampType didn't match the return will be an "Invalid Date"!
+     * @return {Date} if timestampType didn't match the return will be an 'Invalid Date'!
      */
     DatabaseAdapter.prototype.db2date = function(dbValue, timestampType) {
         if (null === dbValue) {
@@ -2225,7 +2225,7 @@ function($, window, undefined) {
      */
     function _isDateType(colType)
     {
-        return (colType.indexOf("DATE") > -1 || colType.indexOf("TIME") > -1)
+        return (colType.indexOf('DATE') > -1 || colType.indexOf('TIME') > -1)
     };
 
 
@@ -2268,7 +2268,7 @@ function($, window, undefined) {
             // AUTO COLLATION
             if (!!this.options.autoCollate && this.options.autoCollateTypes.test(colDef[1])) {
                 if (colDef[2].toUpperCase().indexOf(' COLLATE ') === -1) {
-                    colDef[2] += " COLLATE " + this.options.autoCollate;
+                    colDef[2] += ' COLLATE ' + this.options.autoCollate;
                     this.setColumns(tableName, colDef);
                 }
             }
@@ -2389,10 +2389,10 @@ function($, window, undefined) {
     function getType(obj)
     {
         if (obj === undefined) {
-            return "undefined";
+            return 'undefined';
         }
         if (null === obj) {
-            return "null";
+            return 'null';
         }
         return Object.prototype.toString.call(obj).slice(8, -1);
     }
