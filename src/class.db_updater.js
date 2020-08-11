@@ -91,7 +91,10 @@ af.DbUpdater = (function(/** af */ $) {
          * 11com7 sql database helper.
          * @type {af.DatabaseAdapter}
          */
-        this._$db = $db || $.db || throw new Error('Please set `$db` as argument or assure that a DatabaseAdapter instance is exposed as `$.db`');;
+        this._$db = $db || $.db;
+        if (!this._$db || !(this._$db instanceof $.DatabaseAdapter)) {
+            throw new Error('Please set `$db` as argument or assure that a DatabaseAdapter instance is exposed as `$.db`');
+        }
 
         /**
          * @type {DbUpdater.prototype.defaultOptions}

@@ -35,7 +35,10 @@ function($, window, undefined) {
          * @type {Object}
          */
         this._options = $.extend({}, DbBackup.defaultOptions, opts);
-        this._$db = this._options['$db'] || $.db || throw new Error('Please set `$db` as option or assure that a DatabaseAdapter instance is exposed as `$.db`');
+        this._$db = this._options['$db'] || $.db;
+        if (!this._$db || !(this._$db instanceof $.DatabaseAdapter)) {
+            throw new Error('Please set `$db` as option or assure that a DatabaseAdapter instance is exposed as `$.db`');
+        }
     };
 
     // --------------------------------------------------------------------------------
