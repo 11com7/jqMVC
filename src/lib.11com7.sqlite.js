@@ -144,10 +144,12 @@ function($, window, undefined) {
          */
         this.readyCallbacks = [];
 
-        Object.defineProperty(this, 'connectionFactory', {writable: false, configurable: false});
-        Object.defineProperty(this, 'connection', {writable: false, configurable: false});
-        ['options', 'sqlLast', 'initialized', 'tables', 'triggers', 'indexes', 'views', 'readyCallbacks'].forEach(function(key) {
-            Object.defineProperty(this, key, {writable: true, enumerable: false, configurable: false});
+        var self = this;
+        [
+            'connectionFactory', 'connection', 'options', 'sqlLast',
+            'initialized', 'tables', 'triggers', 'indexes', 'views', 'readyCallbacks'
+        ].forEach(function(key) {
+            Object.defineProperty(self, key, {writable: true, enumerable: false, configurable: false});
         });
 
         if (!!this.options.autoExposeAsDb) {
