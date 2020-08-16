@@ -347,7 +347,11 @@ function($, window, undefined) {
         if (this.isOpen()) {
             this.dbg('close() --> close connection');
 
-            this.connection.close();
+            // try to close the database
+            if (this.connection.hasOwnProperty('close') && 'function' === typeof this.connection.close) {
+                this.connection.close();
+            }
+
             this.connection = null;
             this._trigger('SQL:close');
         }
