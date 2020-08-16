@@ -69,7 +69,7 @@ function($, window, undefined) {
      *
      * @param connectionFactory
      * @param options
-     * @return {DatabaseAdapter}
+     * @return {af.DatabaseAdapter}
      * @constructor
      * @namespace af.DatabaseAdapter
      */
