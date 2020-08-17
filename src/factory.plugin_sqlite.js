@@ -16,10 +16,25 @@
     /**
      * @return {Database}
      */
-    PluginSqliteFactory.prototype.openDatabase = function() {
-        //noinspection JSUnresolvedVariable
-        return window.sqlitePlugin.openDatabase(this.options);
-    };
+    PluginSqliteFactory.prototype = {
+        constructor: PluginSqliteFactory,
+
+        /**
+         * @return {string} name of the factory with database name (e.g. `sqlitePlugin[dbName]`)
+         */
+        get name()
+        {
+            return 'sqlitePlugin[' + this.options.name + ']';
+        },
+
+        /**
+         * @return { Database }
+         */
+        openDatabase: function() {
+            //noinspection JSUnresolvedVariable
+            return window.sqlitePlugin.openDatabase(this.options);
+        }
+    }
 
     function _checkName(name)
     {
